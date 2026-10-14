@@ -1,78 +1,167 @@
-import { useEffect, useRef, useState } from 'react';
-import { applyOp } from '../trace';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { OP_COMPARE, OP_COMPARE_HELD, OP_SET, OP_SWAP, TracePlayer, VALUE_POINTERS } from '../trace';
+import { DEFAULT_SPS, PRESETS, SLIDER_MAX, formatSps, sliderToSps, spsToSlider, tickPlan } from '../speed';
 
-interface Props { input: number[]; trace: Int32Array; sorted: number[]; truncated: boolean }
+interface Props { algoId: string; input: number[]; trace: Int32Array; sorted: number[]; truncated: boolean }
 
-export default function Visualizer({ input, trace, sorted, truncated }: Props) {
-  const total = trace.length / 3;
-  const arr = useRef<number[]>([...input]);
-  const [pos, setPos] = useState(0); // ops applied
-  const [playing, setPlaying] = useState(true);
-  const [speed, setSpeed] = useState(30); // ops per second
-  const [hl, setHl] = useState<{ op: number; i: number; j: number } | null>(null);
-
-  const lo = Math.min(...input, ...sorted), hi = Math.max(...input, ...sorted);
-  const height = (v: number) => (hi === lo ? 60 : 6 + ((v - lo) / (hi - lo)) * 94);
-
-  const posRef = useRef(0);
-  function stepOnce(count = 1) {
-    let q = posRef.current;
-    let last: { op: number; i: number; j: number } | null = null;
-    for (let c = 0; c < count && q < total; c++, q++) last = applyOp(arr.current, trace, q);
-    posRef.current = q;
-    if (last) setHl(last);
-    setPos(q);
-  }
-
+export default function Visualizer({ algoId, input, trace, sorted, truncated }: Props) {
+  const player = useMemo(() => new TracePlayer(input, trace, algoId), [input, trace, algoId]);
+  const [, setVersion] = useState(0);
+  const rerender = () => setVersion((v) => v + 1);
+  const [playing, setPlaying] = useState(true); // auto-play at the slow learning speed
+  const [sps, setSps] = useState(DEFAULT_SPS);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const [width, setWidth] = useState(600);
   useEffect(() => {
-    if (!playing || pos >= total) return;
-    const interval = Math.max(16, 1000 / speed);
-    const perTick = Math.max(1, Math.round((speed * interval) / 1000));
-    const id = setTimeout(() => stepOnce(perTick), interval);
-    return () => clearTimeout(id);
+    const el = rootRef.current;
+    if (!el || typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(() => setWidth(el.clientWidth || 600));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  useEffect(() => { player.seek(0); rerender(); }, [player]);
+
+  // animation timer: rescheduled whenever speed / play state / step changes, so speed changes apply immediately
+  useEffect(() => {
+    if (!playing) return;
+    if (player.done) { setPlaying(false); return; }
+    const { delayMs, stepsPerTick } = tickPlan(sps);
+    const id = window.setTimeout(() => {
+      for (let s = 0; s < stepsPerTick && player.forward(); s++);
+      rerender();
+    }, delayMs);
+    return () => window.clearTimeout(id);
   });
 
-  useEffect(() => { if (pos >= total) setPlaying(false); }, [pos, total]);
+  const fwd = () => { setPlaying(false); player.forward(); rerender(); };
+  const back = () => { setPlaying(false); player.back(); rerender(); };
+  const togglePlay = () => {
+    if (player.done) { player.seek(0); setPlaying(true); } else setPlaying((p) => !p);
+    rerender();
+  };
 
-  function reset() {
-    arr.current = [...input];
-    posRef.current = 0;
-    setPos(0);
-    setHl(null);
-    setPlaying(false);
-  }
+  // keyboard: space = play/pause, ← = step back, → = step forward
+  useEffect(() => {
+    const on = (e: KeyboardEvent) => {
+      const t = e.target as HTMLElement | null;
+      if (!rootRef.current || e.altKey || e.ctrlKey || e.metaKey) return;
+      if (t && (t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.tagName === 'INPUT' || t.isContentEditable)) return;
+      if (e.key === ' ' || e.code === 'Space') {
+        if (t?.tagName === 'BUTTON') return; // let the focused button handle space natively
+        e.preventDefault();
+        togglePlay();
+      } else if (e.key === 'ArrowRight') { e.preventDefault(); fwd(); }
+      else if (e.key === 'ArrowLeft') { e.preventDefault(); back(); }
+    };
+    window.addEventListener('keydown', on);
+    return () => window.removeEventListener('keydown', on);
+  });
 
-  const done = pos >= total;
-  const ok = done && arr.current.every((v, i) => v === sorted[i]);
+  const arr = player.array;
+  const n = arr.length;
+  const lo = Math.min(...input, ...sorted), hi = Math.max(...input, ...sorted);
+  const height = (v: number) => (hi === lo ? 60 : 6 + ((v - lo) / (hi - lo)) * 94);
+  const last = player.last;
+  const done = player.done;
+  const ok = done && arr.every((v, i) => v === sorted[i]);
+  const mask = player.sortedMask;
+
   const cls = (k: number) => {
     if (done) return 'bar done';
-    if (!hl || (k !== hl.i && (hl.op === 2 || k !== hl.j))) return 'bar'; // for set ops, j is the value
-    return hl.op === 0 ? 'bar cmp' : hl.op === 1 ? 'bar swap' : 'bar set';
+    let c = mask[k] ? 'bar sorted' : 'bar';
+    if (last) {
+      const hit = k === last.i || ((last.op === OP_COMPARE || last.op === OP_SWAP) && k === last.j);
+      if (hit) c += last.op === OP_COMPARE || last.op === OP_COMPARE_HELD ? ' cmp' : last.op === OP_SWAP ? ' swap' : last.op === OP_SET ? ' set' : '';
+    }
+    return c;
   };
-  const opName = hl ? (['compare', 'swap', 'set'][hl.op] ?? '') : '';
+
+  // pointer labels grouped by index
+  const byIndex = new Map<number, string[]>();
+  const valuePtrs: string[] = [];
+  for (const [name, v] of player.pointers) {
+    if (VALUE_POINTERS.has(name)) { valuePtrs.push(`${name} = ${v}`); continue; }
+    if (v < 0 || v >= n) continue;
+    byIndex.set(v, [...(byIndex.get(v) ?? []), name]);
+  }
+  const showValues = n <= 32;
+  // lay pointer labels out in rows so neighbouring labels never overlap
+  const pxPerBar = Math.max(1, (width - 8) / Math.max(1, n));
+  const placed: { idx: number; text: string; names: string[]; row: number; center: number }[] = [];
+  const rowEnd: number[] = [];
+  for (const [idx, names] of [...byIndex.entries()].sort((a, b) => a[0] - b[0])) {
+    const text = names.join(',');
+    const half = (text.length * 7 + 8) / 2; // approx label half-width in px (11px monospace)
+    const inner = Math.max(2 * half, width - 10);
+    const center = Math.min(Math.max((idx + 0.5) * pxPerBar, half), inner - half); // keep labels inside the box
+    let row = rowEnd.findIndex((end) => end + 3 < center - half);
+    if (row === -1) { row = rowEnd.length; rowEnd.push(0); }
+    rowEnd[row] = center + half;
+    placed.push({ idx, text, names, row, center });
+  }
+  const rows = Math.max(1, rowEnd.length);
 
   return (
-    <div className="viz" data-testid="viz">
-      <div className="bars" style={{ ['--n' as string]: arr.current.length }} data-testid="viz-bars">
-        {arr.current.map((v, k) => (
-          <div key={k} className={cls(k)} style={{ height: `${height(v)}%` }} title={String(v)} data-value={v} />
+    <div className="viz" data-testid="viz" ref={rootRef}>
+      <div className="bars" data-testid="viz-bars">
+        {arr.map((v, k) => (
+          <div key={k} className={cls(k)} style={{ height: `${height(v)}%` }} data-value={v} data-tip={`a[${k}] = ${v}`}>
+            {showValues && <span className="bar-val">{v}</span>}
+          </div>
         ))}
       </div>
+      <div className="pointers" data-testid="viz-pointers" aria-label="Pointers" style={{ height: `${0.9 + rows * 1.35}rem` }}>
+        {placed.map(({ idx, names, row, center }) => (
+          <div key={idx} className="ptr" style={{ left: `${center + 4}px`, top: `${row * 1.35}rem` }} data-index={idx}>
+            <span className="ptr-arrow" aria-hidden="true">▲</span>
+            <span className="ptr-name">
+              {names.map((nm, q) => <span key={nm} className={`ptr-${nm}`} data-ptr={nm}>{q ? ',' : ''}{nm}</span>)}
+            </span>
+          </div>
+        ))}
+      </div>
+      {valuePtrs.length > 0 && <div className="small muted" data-testid="viz-value-ptrs">{valuePtrs.join(' · ')}</div>}
+
+      <p className="viz-caption" data-testid="viz-caption" aria-live="polite">{player.caption || '\u00a0'}</p>
+
+      <div className="viz-counters small" data-testid="viz-status">
+        <span>Step <b data-testid="viz-step-num">{player.step.toLocaleString()}</b> / {player.total.toLocaleString()}</span>
+        <span>Comparisons <b>{player.comparisons.toLocaleString()}</b></span>
+        <span>Swaps <b>{player.swaps.toLocaleString()}</b></span>
+        <span>Writes <b>{player.writes.toLocaleString()}</b></span>
+        {done && <span>{ok ? '✓ sorted' : truncated ? 'trace truncated (too many operations to record)' : '✗ mismatch'}</span>}
+      </div>
+      <label className="scrub">
+        <span className="sr-only">Progress</span>
+        <input type="range" min={0} max={player.total} value={player.step} aria-label="Progress (step)" data-testid="viz-scrub"
+          onChange={(e) => { setPlaying(false); player.seek(Number(e.target.value)); rerender(); }} />
+      </label>
+
       <div className="viz-controls">
-        <button type="button" className="btn small" onClick={() => setPlaying((p) => !p)} disabled={done} data-testid="viz-play">{playing ? 'Pause' : 'Play'}</button>
-        <button type="button" className="btn small" onClick={() => { setPlaying(false); stepOnce(1); }} disabled={done} data-testid="viz-step">Step</button>
-        <button type="button" className="btn small" onClick={reset} data-testid="viz-reset">Reset</button>
-        <label className="speed">Speed
-          <input type="range" min={1} max={2000} value={speed} onChange={(e) => setSpeed(Number(e.target.value))} data-testid="viz-speed" />
-          <span>{speed} ops/s</span>
+        <button type="button" className="btn small" onClick={() => { setPlaying(false); player.seek(0); rerender(); }} data-testid="viz-reset" aria-label="Reset to start">⏮ Reset</button>
+        <button type="button" className="btn small" onClick={back} disabled={player.step === 0} data-testid="viz-back" aria-label="Step back">◀ Back</button>
+        <button type="button" className="btn small primary" onClick={togglePlay} data-testid="viz-play">{playing ? '❚❚ Pause' : done ? '↻ Replay' : '▶ Play'}</button>
+        <button type="button" className="btn small" onClick={fwd} disabled={done} data-testid="viz-step" aria-label="Step forward">Step ▶</button>
+        <button type="button" className="btn small" onClick={() => { setPlaying(false); player.seek(player.total); rerender(); }} disabled={done} data-testid="viz-end" aria-label="Jump to end">End ⏭</button>
+      </div>
+      <div className="speed-row">
+        <div className="presets" role="group" aria-label="Speed presets">
+          {PRESETS.map((p) => (
+            <button key={p.label} type="button" className={`btn small ${Math.abs(sps - p.sps) < 1e-9 ? 'active' : ''}`} aria-pressed={Math.abs(sps - p.sps) < 1e-9}
+              onClick={() => setSps(p.sps)} data-testid={`speed-${p.label.toLowerCase().replace(' ', '-')}`}>{p.label}</button>
+          ))}
+        </div>
+        <label className="speed">
+          <span>Speed</span>
+          <input type="range" min={0} max={SLIDER_MAX} value={spsToSlider(sps)} onChange={(e) => setSps(sliderToSps(Number(e.target.value)))}
+            data-testid="viz-speed" aria-label="Animation speed (steps per second)" aria-valuetext={formatSps(sps)} />
+          <output data-testid="viz-speed-value">{formatSps(sps)}</output>
         </label>
       </div>
-      <div className="viz-status small" data-testid="viz-status">
-        Step {pos.toLocaleString()} / {total.toLocaleString()} {opName && !done && `· ${opName}${hl ? ` [${hl.i}${hl.op === 2 ? ` ← ${hl.j}` : `, ${hl.j}`}]` : ''}`}
-        {done && (ok ? ' · ✓ sorted' : truncated ? ' · trace truncated (too many operations to record)' : ' · ✗ mismatch')}
-      </div>
       <div className="viz-legend small">
-        <span><i className="sw cmp" /> compare</span><span><i className="sw swap" /> swap</span><span><i className="sw set" /> write</span><span><i className="sw done" /> sorted</span>
+        <span><i className="sw cmp" /> compare</span><span><i className="sw swap" /> swap</span><span><i className="sw set" /> write</span>
+        <span><i className="sw sorted" /> final position</span><span className="muted">Keys: Space play/pause · ← back · → forward</span>
       </div>
     </div>
   );

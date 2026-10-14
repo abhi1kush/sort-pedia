@@ -4,6 +4,7 @@ import { ALGORITHMS, ALGO_BY_ID } from './algorithms';
 import Landing from './components/Landing';
 import AlgoPage from './components/AlgoPage';
 import Settings from './components/Settings';
+import ThemeControl from './components/ThemeControl';
 
 export default function App() {
   const route = useRoute();
@@ -33,6 +34,7 @@ export default function App() {
           </select>
         </label>
         <Settings />
+        <ThemeControl />
       </header>
       <main className="container">
         {route.page === 'algo' && !algo ? (

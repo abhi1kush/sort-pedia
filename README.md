@@ -24,6 +24,21 @@ WebAssembly** (`wasm/`, built with `wasm-pack`); the UI is React + Vite + TypeSc
   per-algorithm size limits, e.g. bogo ≤ 8), *Run (no GUI)* showing the sorted output, time, comparisons, swaps and
   writes, and *Run with visualization*: bars whose heights match the values, animated from a WASM-recorded trace of
   compare / swap / write operations, with play/pause/step/reset and a speed slider.
+- **Teaching visualization**: a logarithmic speed slider from 0.25 to 200 steps/s with *Very slow / Slow / Normal /
+  Fast* presets (default *Slow*, 2 steps/s; changes apply mid-run), step back / step forward (replayed from the
+  trace), a progress scrubber, keyboard shortcuts (Space play/pause, ← back, → forward), **pointer markers** under
+  the bars (quick: pivot/lt/i/gt/lo/hi; insertion: key/i/j; selection: i/min/j; bubble: j/end; merge: k/right/lo/mid/hi;
+  heap: heap/node/child; shell: gap/i/j/key; plus introsort, cycle, pancake, comb, cocktail, gnome and more),
+  elements already in their final position shown in a distinct colour, a plain-language caption for every step
+  (e.g. *Compare a[17]=27 (i) with pivot 30: 27 < 30, so it goes left of the pivot.*), and step / comparison / swap /
+  write counters. Pointers and sorted regions are recorded by the Rust core as extra trace ops (`OP_POINTER`,
+  `OP_SORTED`, `OP_COMPARE_HELD`, see `wasm/src/ctx.rs`).
+- **Light and dark themes** via CSS variables (page, cards, syntax highlighting, charts, bars, forms, tooltips), checked
+  for WCAG AA contrast by a Vitest test. The header *Theme* control offers **Auto** (default), Light and Dark, saved in
+  `localStorage`. Auto follows the local clock: **dark from 18:00 to 06:00**, light otherwise. The boundaries are the
+  `MORNING_HOUR` (6) and `EVENING_HOUR` (18) constants in `src/theme.ts` (mirrored in the inline script in
+  `index.html`, which applies the theme before first paint so there is no flash). The theme switches at the boundary
+  without a reload (a timer for the next switch, plus a re-check on `visibilitychange`).
 - Responsive down to 360px wide with no horizontal overflow.
 
 ## Ranking (best → worst)
@@ -71,7 +86,7 @@ wasm/                 Rust crate `sortcore` (instrumented sorts + wasm-bindgen A
 snippets/<algo>/      c.c cpp.cpp java.java go.go rust.rs python.py (shown in the UI and verified by script)
 scripts/verify-snippets.mjs  compiles + runs all 120 snippets against test arrays
 src/                  React app (config.ts, parse.ts, algorithms.ts, components/)
-tests/                Vitest unit tests (parsing, config, catalogue consistency, trace replay)
+tests/                Vitest unit tests (parsing, config, catalogue, theme clock/scheduling, contrast, speed mapping, trace player)
 e2e/live-check.mjs    headless Chrome check of the live site
 ```
 

@@ -4,7 +4,7 @@ import { SHAPES, generate, type Shape } from '../parse';
 import { timeSort, loadWasm } from '../wasm';
 
 type Row = { n: number } & Partial<Record<Shape, number>>;
-const COLORS: Record<Shape, string> = { random: '#2563eb', sorted: '#16a34a', reversed: '#dc2626', nearly: '#ca8a04', few: '#7c3aed' };
+const COLORS: Record<Shape, string> = { random: 'var(--s-random)', sorted: 'var(--s-sorted)', reversed: 'var(--s-reversed)', nearly: 'var(--s-nearly)', few: 'var(--s-few)' };
 
 async function measure(id: string, data: number[]): Promise<number> {
   // repeat fast runs and keep the best time to reduce timer noise
@@ -67,14 +67,20 @@ export default function Benchmark({ algo }: { algo: Algo }) {
         <>
           <figure className="chart">
             <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Benchmark chart">
+              {[0.25, 0.5, 0.75, 1].map((f) => <line key={f} className="grid" x1={P} x2={W - 10} y1={y(maxMs * f)} y2={y(maxMs * f)} />)}
               <line x1={P} y1={H - P} x2={W - 10} y2={H - P} className="axis" />
               <line x1={P} y1={10} x2={P} y2={H - P} className="axis" />
               <text x={W / 2} y={H - 8} className="axis-label" textAnchor="middle">n</text>
               <text x={4} y={14} className="axis-label">{maxMs.toFixed(2)} ms</text>
               {SHAPES.map((s) => (
-                <polyline key={s.id} fill="none" stroke={COLORS[s.id]} strokeWidth={2}
+                <polyline key={s.id} fill="none" style={{ stroke: COLORS[s.id] }} strokeWidth={2}
                   points={rows.filter((r) => r[s.id] !== undefined).map((r) => `${x(r.n).toFixed(1)},${y(r[s.id]!).toFixed(1)}`).join(' ')} />
               ))}
+              {SHAPES.flatMap((s) => rows.filter((r) => r[s.id] !== undefined).map((r) => (
+                <circle key={`${s.id}-${r.n}`} cx={x(r.n)} cy={y(r[s.id]!)} r={3} style={{ fill: COLORS[s.id] }}>
+                  <title>{`${s.label}, n = ${r.n.toLocaleString()}: ${r[s.id]!.toFixed(3)} ms`}</title>
+                </circle>
+              )))}
             </svg>
             <figcaption className="legend">
               {SHAPES.map((s) => <span key={s.id}><i style={{ background: COLORS[s.id] }} /> {s.label}</span>)}

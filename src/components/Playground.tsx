@@ -100,7 +100,7 @@ export default function Playground({ algo }: { algo: Algo }) {
           <p className="muted small">Swaps = element exchanges; writes = single-element stores (used by merge, insertion, shell, counting, radix, bucket, cycle and Timsort).</p>
         </div>
       )}
-      {viz && <Visualizer key={viz.key} input={viz.input} trace={viz.trace} sorted={viz.sorted} truncated={viz.truncated} />}
+      {viz && <Visualizer key={viz.key} algoId={algo.id} input={viz.input} trace={viz.trace} sorted={viz.sorted} truncated={viz.truncated} />}
     </div>
   );
 }

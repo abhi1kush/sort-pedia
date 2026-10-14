@@ -6,6 +6,17 @@
     <meta name="description" content="Sort Pedia: every common sorting algorithm, ranked, explained, benchmarked and visualized (Rust + WebAssembly)." />
     <link rel="icon" type="image/svg+xml" href="/sort-pedia/favicon.svg" />
     <title>Sort Pedia</title>
+    <script id="theme-boot">
+      // Apply the theme before first paint (no flash). Keep in sync with src/theme.ts.
+      (function () {
+        var MORNING_HOUR = 6, EVENING_HOUR = 18, mode = 'auto';
+        try { mode = localStorage.getItem('sort-pedia:theme') || 'auto'; } catch (e) {}
+        var h = new Date().getHours();
+        var theme = mode === 'light' || mode === 'dark' ? mode : (h >= MORNING_HOUR && h < EVENING_HOUR ? 'light' : 'dark');
+        document.documentElement.setAttribute('data-theme', theme);
+        document.documentElement.style.colorScheme = theme;
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

@@ -20,7 +20,7 @@ pub fn run_on(id: &str, c: &mut Ctx) -> Result<(), String> {
         "merge" => sorts::merge(c),
         "heap" => sorts::heap(c),
         "radix" => sorts::radix(c),
-        "counting" => return sorts::counting(c),
+        "counting" => sorts::counting(c)?,
         "bucket" => sorts::bucket(c),
         "shell" => sorts::shell(c),
         "comb" => sorts::comb(c),
@@ -33,9 +33,11 @@ pub fn run_on(id: &str, c: &mut Ctx) -> Result<(), String> {
         "gnome" => sorts::gnome(c),
         "cycle" => sorts::cycle(c),
         "pancake" => sorts::pancake(c),
-        "bogo" => return sorts::bogo(c),
+        "bogo" => sorts::bogo(c)?,
         _ => return Err(format!("unknown algorithm '{}'", id)),
     }
+    let n = c.len();
+    c.sorted(0, n);
     Ok(())
 }
 
@@ -88,6 +90,9 @@ pub fn sort_only(id: &str, data: Vec<i32>) -> Result<f64, JsError> {
     run_on(id, &mut c).map_err(|e| JsError::new(&e))?;
     Ok(c.comparisons as f64)
 }
+
+#[wasm_bindgen]
+pub fn pointer_names() -> Vec<String> { ctx::POINTER_NAMES.iter().map(|s| s.to_string()).collect() }
 
 #[wasm_bindgen]
 pub fn algorithm_ids() -> Vec<String> { ALGORITHMS.iter().map(|s| s.to_string()).collect() }

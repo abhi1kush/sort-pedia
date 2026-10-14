@@ -9,6 +9,7 @@ export default function Settings() {
     <label className="settings">
       <span>Default code language</span>
       <select
+        aria-label="Default code language"
         data-testid="default-lang"
         value={lang}
         onChange={(e) => {
