@@ -8,7 +8,7 @@ const CHROME = process.env.CHROME_PATH || '/usr/bin/google-chrome';
 
 let passed = 0, failed = 0;
 function check(name, cond, extra = '') {
-  if (cond) { passed++; console.log(`  PASS ${name}`); }
+  if (cond) { passed++; console.log(`  PASS ${name}${extra && /measured|gained/.test(extra) ? ` (${extra})` : ""}`); }
   else { failed++; console.log(`  FAIL ${name} ${extra}`); }
 }
 
