@@ -1,0 +1,37 @@
+{
+  "name": "sort-pedia",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "homepage": "https://abhi1kush.github.io/sort-pedia/",
+  "scripts": {
+    "build:wasm": "wasm-pack build wasm --target web --release",
+    "dev": "npm run build:wasm && vite",
+    "build": "npm run build:wasm && tsc -b && vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:rust": "cd wasm && cargo test",
+    "verify:snippets": "node scripts/verify-snippets.mjs",
+    "e2e": "node e2e/live-check.mjs",
+    "predeploy": "npm run build",
+    "deploy": "gh-pages -d dist -t"
+  },
+  "dependencies": {
+    "prismjs": "^1.30.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.5",
+    "@types/prismjs": "^1.26.6",
+    "@types/react": "^18.3.31",
+    "@types/react-dom": "^18.3.7",
+    "@vitejs/plugin-react": "^4.7.0",
+    "gh-pages": "^6.3.0",
+    "jsdom": "^25.0.1",
+    "playwright-core": "^1.64.1",
+    "typescript": "^5.9.3",
+    "vite": "^5.4.21",
+    "vitest": "^2.1.9"
+  }
+}
