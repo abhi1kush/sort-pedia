@@ -154,18 +154,18 @@ fn trace_pointer_fields_valid_for_all_algorithms() {
 fn main_algorithms_emit_named_pointers() {
     let input: Vec<i32> = vec![5, 3, 8, 1, 9, 2, 7, 4, 6, 0, 11, 10, 15, 13, 12, 14, 3, 8];
     let want: &[(&str, &[&str])] = &[
-        ("quick", &["pivot", "scan", "lessEnd", "greaterStart", "lo", "hi"]),
+        ("quick", &["pivot", "i", "lessEnd", "greaterStart", "lo", "hi"]),
         ("insertion", &["key", "hole", "current"]),
-        ("selection", &["fillPos", "minIndex", "scan"]),
-        ("bubble", &["scan", "sortedFrom"]),
+        ("selection", &["fillPos", "minIndex", "i"]),
+        ("bubble", &["i", "sortedFrom"]),
         ("merge", &["writePos", "rightPos", "lo", "mid", "hi"]),
         ("heap", &["heapEnd", "node", "child"]),
         ("shell", &["gap", "current", "hole", "key"]),
-        ("introsort", &["pivot", "storePos", "scan"]),
-        ("cycle", &["cycleStart", "targetPos", "scan"]),
-        ("pancake", &["lastUnsorted", "maxIndex", "scan"]),
+        ("introsort", &["pivot", "storePos", "i"]),
+        ("cycle", &["cycleStart", "targetPos", "i"]),
+        ("pancake", &["lastUnsorted", "maxIndex", "i"]),
         ("comb", &["gap", "left", "right"]),
-        ("cocktail", &["lo", "hi", "scan"]),
+        ("cocktail", &["lo", "hi", "i"]),
         ("gnome", &["gnomePos"]),
         ("odd-even", &["pairStart"]),
         ("counting", &["writePos"]),
@@ -190,8 +190,9 @@ proptest! {
 
 #[test]
 fn no_cryptic_pointer_names() {
-    // Learner-facing names: no lt/gt/k/i/j/min/end style abbreviations.
-    for bad in ["lt", "gt", "i", "j", "k", "min", "max", "end", "heap", "pos", "size", "start"] {
+    // Learner-facing names: no lt/gt/k/j/min/end style abbreviations. `i` (the current index) is allowed.
+    for bad in ["lt", "gt", "j", "k", "m", "v", "a", "min", "max", "end", "heap", "pos", "size", "start", "scan"] {
         assert!(!POINTER_NAMES.contains(&bad), "cryptic pointer name '{bad}' is still used");
     }
+    assert!(POINTER_NAMES.contains(&"i"), "the current index pointer should be called i");
 }

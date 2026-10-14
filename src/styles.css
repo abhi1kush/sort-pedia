@@ -167,3 +167,4 @@ textarea[aria-invalid='true'] { border-color: var(--bad); }
   .rank-num { min-width: 2rem; font-size: 1.1rem; }
   .bars { height: 180px; }
 }
+.notation { font-size: .85rem; color: var(--muted); margin: 0 0 .5rem; }

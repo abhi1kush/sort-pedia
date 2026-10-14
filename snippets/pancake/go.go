@@ -11,9 +11,9 @@ func flip(arr []int, k int) {
 func sortArray(arr []int) {
 	for unsortedSize := len(arr); unsortedSize > 1; unsortedSize-- {
 		maxIndex := 0
-		for scan := 1; scan < unsortedSize; scan++ {
-			if arr[scan] > arr[maxIndex] {
-				maxIndex = scan
+		for i := 1; i < unsortedSize; i++ {
+			if arr[i] > arr[maxIndex] {
+				maxIndex = i
 			}
 		}
 		if maxIndex != unsortedSize-1 {

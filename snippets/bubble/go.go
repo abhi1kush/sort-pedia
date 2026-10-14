@@ -5,9 +5,9 @@ package main
 func sortArray(arr []int) {
 	for sortedFrom := len(arr); sortedFrom > 1; sortedFrom-- {
 		swapped := false
-		for scan := 1; scan < sortedFrom; scan++ {
-			if arr[scan] < arr[scan-1] {
-				arr[scan], arr[scan-1] = arr[scan-1], arr[scan]
+		for i := 1; i < sortedFrom; i++ {
+			if arr[i] < arr[i-1] {
+				arr[i], arr[i-1] = arr[i-1], arr[i]
 				swapped = true
 			}
 		}

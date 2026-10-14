@@ -36,7 +36,7 @@ static void intro(std::vector<int>& arr, int lo, int hi, int depth) {
         if (arr[pivotPos] < arr[lo]) std::swap(arr[pivotPos], arr[lo]);
         if (arr[mid] < arr[pivotPos]) std::swap(arr[mid], arr[pivotPos]);  // median now at arr[pivotPos]
         int storePos = lo;
-        for (int scan = lo; scan < pivotPos; scan++) if (arr[scan] < arr[pivotPos]) std::swap(arr[storePos++], arr[scan]);
+        for (int i = lo; i < pivotPos; i++) if (arr[i] < arr[pivotPos]) std::swap(arr[storePos++], arr[i]);
         std::swap(arr[storePos], arr[pivotPos]);
         if (storePos - lo < hi - storePos - 1) { intro(arr, lo, storePos, depth); lo = storePos + 1; }
         else { intro(arr, storePos + 1, hi, depth); hi = storePos; }

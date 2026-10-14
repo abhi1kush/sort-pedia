@@ -5,9 +5,9 @@ package main
 func sortArray(arr []int) {
 	for fillPos := 0; fillPos+1 < len(arr); fillPos++ {
 		minIndex := fillPos
-		for scan := fillPos + 1; scan < len(arr); scan++ {
-			if arr[scan] < arr[minIndex] {
-				minIndex = scan
+		for i := fillPos + 1; i < len(arr); i++ {
+			if arr[i] < arr[minIndex] {
+				minIndex = i
 			}
 		}
 		arr[fillPos], arr[minIndex] = arr[minIndex], arr[fillPos]

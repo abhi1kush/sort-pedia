@@ -60,9 +60,9 @@ func intro(arr []int, lo, hi, depth int) {
 			arr[mid], arr[pivotPos] = arr[pivotPos], arr[mid]
 		}
 		storePos := lo
-		for scan := lo; scan < pivotPos; scan++ {
-			if arr[scan] < arr[pivotPos] {
-				arr[storePos], arr[scan] = arr[scan], arr[storePos]
+		for i := lo; i < pivotPos; i++ {
+			if arr[i] < arr[pivotPos] {
+				arr[storePos], arr[i] = arr[i], arr[storePos]
 				storePos++
 			}
 		}

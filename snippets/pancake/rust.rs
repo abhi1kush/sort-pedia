@@ -3,9 +3,9 @@
 pub fn sort_array(arr: &mut [i32]) {
     for unsorted_size in (2..=arr.len()).rev() {
         let mut max_index = 0;
-        for scan in 1..unsorted_size {
-            if arr[scan] > arr[max_index] {
-                max_index = scan;
+        for i in 1..unsorted_size {
+            if arr[i] > arr[max_index] {
+                max_index = i;
             }
         }
         if max_index != unsorted_size - 1 {

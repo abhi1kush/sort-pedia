@@ -2,8 +2,8 @@
 void sort_array(int *arr, int n) {
     for (int sorted_from = n; sorted_from > 1; sorted_from--) {
         int swapped = 0;
-        for (int scan = 1; scan < sorted_from; scan++)
-            if (arr[scan] < arr[scan - 1]) { int t = arr[scan]; arr[scan] = arr[scan - 1]; arr[scan - 1] = t; swapped = 1; }
+        for (int i = 1; i < sorted_from; i++)
+            if (arr[i] < arr[i - 1]) { int t = arr[i]; arr[i] = arr[i - 1]; arr[i - 1] = t; swapped = 1; }
         if (!swapped) break;
     }
 }

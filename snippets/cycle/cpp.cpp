@@ -7,13 +7,13 @@ void sortArray(std::vector<int>& arr) {
     for (size_t cycleStart = 0; cycleStart + 1 < n; cycleStart++) {
         int item = arr[cycleStart];
         size_t targetPos = cycleStart;
-        for (size_t scan = cycleStart + 1; scan < n; scan++) if (arr[scan] < item) targetPos++;
+        for (size_t i = cycleStart + 1; i < n; i++) if (arr[i] < item) targetPos++;
         if (targetPos == cycleStart) continue;
         while (item == arr[targetPos]) targetPos++;
         std::swap(item, arr[targetPos]);
         while (targetPos != cycleStart) {
             targetPos = cycleStart;
-            for (size_t scan = cycleStart + 1; scan < n; scan++) if (arr[scan] < item) targetPos++;
+            for (size_t i = cycleStart + 1; i < n; i++) if (arr[i] < item) targetPos++;
             while (item == arr[targetPos]) targetPos++;
             if (item != arr[targetPos]) std::swap(item, arr[targetPos]);
         }

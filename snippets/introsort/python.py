@@ -47,9 +47,9 @@ def _intro(arr, lo, hi, depth):
         if arr[mid] < arr[pivot_pos]:  # median now at arr[pivot_pos]
             arr[mid], arr[pivot_pos] = arr[pivot_pos], arr[mid]
         store_pos = lo
-        for scan in range(lo, pivot_pos):
-            if arr[scan] < arr[pivot_pos]:
-                arr[store_pos], arr[scan] = arr[scan], arr[store_pos]
+        for i in range(lo, pivot_pos):
+            if arr[i] < arr[pivot_pos]:
+                arr[store_pos], arr[i] = arr[i], arr[store_pos]
                 store_pos += 1
         arr[store_pos], arr[pivot_pos] = arr[pivot_pos], arr[store_pos]
         if store_pos - lo < hi - store_pos - 1:

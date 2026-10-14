@@ -6,7 +6,7 @@ static void flip(int *arr, int k) {
 void sort_array(int *arr, int n) {
     for (int unsorted_size = n; unsorted_size > 1; unsorted_size--) {
         int max_index = 0;
-        for (int scan = 1; scan < unsorted_size; scan++) if (arr[scan] > arr[max_index]) max_index = scan;
+        for (int i = 1; i < unsorted_size; i++) if (arr[i] > arr[max_index]) max_index = i;
         if (max_index != unsorted_size - 1) {
             flip(arr, max_index);
             flip(arr, unsorted_size - 1);

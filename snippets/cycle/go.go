@@ -6,8 +6,8 @@ func sortArray(arr []int) {
 	n := len(arr)
 	for cycleStart := 0; cycleStart < n-1; cycleStart++ {
 		item, targetPos := arr[cycleStart], cycleStart
-		for scan := cycleStart + 1; scan < n; scan++ {
-			if arr[scan] < item {
+		for i := cycleStart + 1; i < n; i++ {
+			if arr[i] < item {
 				targetPos++
 			}
 		}
@@ -20,8 +20,8 @@ func sortArray(arr []int) {
 		arr[targetPos], item = item, arr[targetPos]
 		for targetPos != cycleStart {
 			targetPos = cycleStart
-			for scan := cycleStart + 1; scan < n; scan++ {
-				if arr[scan] < item {
+			for i := cycleStart + 1; i < n; i++ {
+				if arr[i] < item {
 					targetPos++
 				}
 			}

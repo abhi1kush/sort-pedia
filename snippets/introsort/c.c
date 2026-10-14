@@ -35,7 +35,7 @@ static void intro(int *arr, int lo, int hi, int depth) {
         if (arr[pivot_pos] < arr[lo]) swap(arr, pivot_pos, lo);
         if (arr[mid] < arr[pivot_pos]) swap(arr, mid, pivot_pos);      /* median now at arr[pivot_pos] */
         int store_pos = lo;
-        for (int scan = lo; scan < pivot_pos; scan++) if (arr[scan] < arr[pivot_pos]) swap(arr, store_pos++, scan);
+        for (int i = lo; i < pivot_pos; i++) if (arr[i] < arr[pivot_pos]) swap(arr, store_pos++, i);
         swap(arr, store_pos, pivot_pos);
         if (store_pos - lo < hi - store_pos - 1) { intro(arr, lo, store_pos, depth); lo = store_pos + 1; }
         else { intro(arr, store_pos + 1, hi, depth); hi = store_pos; }

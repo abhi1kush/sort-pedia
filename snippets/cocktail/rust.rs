@@ -8,16 +8,16 @@ pub fn sort_array(arr: &mut [i32]) {
     let mut swapped = true;
     while swapped && lo < hi {
         swapped = false;
-        for scan in lo..hi {
-            if arr[scan + 1] < arr[scan] {
-                arr.swap(scan, scan + 1);
+        for i in lo..hi {
+            if arr[i + 1] < arr[i] {
+                arr.swap(i, i + 1);
                 swapped = true;
             }
         }
         hi -= 1;
-        for scan in (lo + 1..=hi).rev() {
-            if arr[scan] < arr[scan - 1] {
-                arr.swap(scan, scan - 1);
+        for i in (lo + 1..=hi).rev() {
+            if arr[i] < arr[i - 1] {
+                arr.swap(i, i - 1);
                 swapped = true;
             }
         }

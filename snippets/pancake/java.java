@@ -7,7 +7,7 @@ class PancakeSort {
     public static void sort(int[] arr) {
         for (int unsortedSize = arr.length; unsortedSize > 1; unsortedSize--) {
             int maxIndex = 0;
-            for (int scan = 1; scan < unsortedSize; scan++) if (arr[scan] > arr[maxIndex]) maxIndex = scan;
+            for (int i = 1; i < unsortedSize; i++) if (arr[i] > arr[maxIndex]) maxIndex = i;
             if (maxIndex != unsortedSize - 1) {
                 flip(arr, maxIndex);
                 flip(arr, unsortedSize - 1);

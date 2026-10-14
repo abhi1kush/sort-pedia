@@ -7,11 +7,11 @@ void sortArray(std::vector<int>& arr) {
     bool swapped = true;
     while (swapped && lo < hi) {
         swapped = false;
-        for (int scan = lo; scan < hi; scan++)
-            if (arr[scan + 1] < arr[scan]) { std::swap(arr[scan], arr[scan + 1]); swapped = true; }
+        for (int i = lo; i < hi; i++)
+            if (arr[i + 1] < arr[i]) { std::swap(arr[i], arr[i + 1]); swapped = true; }
         hi--;
-        for (int scan = hi; scan > lo; scan--)
-            if (arr[scan] < arr[scan - 1]) { std::swap(arr[scan], arr[scan - 1]); swapped = true; }
+        for (int i = hi; i > lo; i--)
+            if (arr[i] < arr[i - 1]) { std::swap(arr[i], arr[i - 1]); swapped = true; }
         lo++;
     }
 }

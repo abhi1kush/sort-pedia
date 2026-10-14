@@ -8,17 +8,17 @@ func quick(arr []int, lo, hi int) {
 	for lo < hi {
 		pivotIndex := lo + rand.Intn(hi-lo+1)
 		arr[lo], arr[pivotIndex] = arr[pivotIndex], arr[lo]
-		pivot, lessEnd, scan, greaterStart := arr[lo], lo, lo+1, hi
-		for scan <= greaterStart {
-			if arr[scan] < pivot {
-				arr[lessEnd], arr[scan] = arr[scan], arr[lessEnd]
+		pivot, lessEnd, i, greaterStart := arr[lo], lo, lo+1, hi
+		for i <= greaterStart {
+			if arr[i] < pivot {
+				arr[lessEnd], arr[i] = arr[i], arr[lessEnd]
 				lessEnd++
-				scan++
-			} else if arr[scan] > pivot {
-				arr[scan], arr[greaterStart] = arr[greaterStart], arr[scan]
+				i++
+			} else if arr[i] > pivot {
+				arr[i], arr[greaterStart] = arr[greaterStart], arr[i]
 				greaterStart--
 			} else {
-				scan++
+				i++
 			}
 		}
 		if lessEnd-lo < hi-greaterStart {

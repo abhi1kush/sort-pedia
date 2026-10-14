@@ -1,4 +1,4 @@
-import { ALGORITHMS, type Algo } from '../algorithms';
+import { ALGORITHMS, NOTATION, type Algo } from '../algorithms';
 import CodePanel from './CodePanel';
 import GrowthChart from './GrowthChart';
 import Benchmark from './Benchmark';
@@ -23,6 +23,7 @@ export default function AlgoPage({ algo }: { algo: Algo }) {
       <div className="two-col">
         <section className="card" aria-label="Algorithm explanation">
           <h2>How it works</h2>
+          <p className="notation" data-testid="notation">{NOTATION}</p>
           <ol className="steps">{algo.steps.map((s) => <li key={s}>{s}</li>)}</ol>
           <h3>Pseudocode</h3>
           <pre className="pseudo">{algo.pseudocode}</pre>

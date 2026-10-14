@@ -8,7 +8,7 @@ export const OP_COMPARE_HELD = 5; // compare held value y (key / left-run value 
 
 /** Mirrors POINTER_NAMES in wasm/src/ctx.rs (camelCase ids; shown to learners as words via pointerLabel). */
 export const POINTER_NAMES = [
-  'lo', 'hi', 'mid', 'pivot', 'lessEnd', 'greaterStart', 'scan', 'storePos', 'current', 'hole', 'key', 'gap', 'runStart',
+  'lo', 'hi', 'mid', 'pivot', 'lessEnd', 'greaterStart', 'i', 'storePos', 'current', 'hole', 'key', 'gap', 'runStart',
   'fillPos', 'minIndex', 'sortedFrom', 'writePos', 'rightPos', 'heapEnd', 'node', 'child', 'left', 'right', 'pairStart',
   'gnomePos', 'cycleStart', 'targetPos', 'lastUnsorted', 'maxIndex',
 ] as const;
@@ -26,7 +26,7 @@ export const POINTER_HELP: Record<string, string> = {
   pivot: 'position of the pivot value everything is compared with',
   lessEnd: 'end of the "less than pivot" block: everything left of it is smaller than the pivot',
   greaterStart: 'start of the "greater than pivot" block: everything right of it is larger than the pivot',
-  scan: 'the element currently being examined',
+  i: 'the current index: the element being examined right now',
   storePos: 'next slot for an element smaller than the pivot',
   current: 'the element being inserted into the sorted part on its left',
   hole: 'the empty slot the key moves through while larger elements shift right',
@@ -53,7 +53,7 @@ export const POINTER_HELP: Record<string, string> = {
 export const POINTER_HELP_BY_ALGO: Record<string, Record<string, string>> = {
   cocktail: { lo: 'first unsorted index (everything left of it is final)', hi: 'last unsorted index (everything right of it is final)' },
   merge: { lo: 'first index of the two halves being merged', hi: 'last index of the two halves being merged' },
-  quick: { scan: 'the element currently compared with the pivot' },
+  quick: { i: 'the current index: the element being compared with the pivot right now' },
   timsort: { key: 'the element being binary-inserted into the run' },
 };
 export function pointerHelp(algoId: string, name: string): string {
@@ -205,9 +205,9 @@ export class TracePlayer {
           const other = x === pv ? y : x;
           const r = rel(a[other], a[pv]);
           const verdict = this.algoId === 'quick'
-            ? (r === '<' ? 'it joins the "less" block (swap to less end; less end and scan move right)'
+            ? (r === '<' ? 'it joins the "less" block (swap to less end; less end and i move right)'
               : r === '>' ? 'it joins the "greater" block (swap to greater start; greater start moves left)'
-              : 'it stays with the pivot copies (scan moves right)')
+              : 'it stays with the pivot copies (i moves right)')
             : r === '<' ? 'it goes left of the pivot' : r === '>' ? 'it goes right of the pivot' : 'it equals the pivot';
           return `Compare ${at(other)} with pivot ${a[pv]}: ${a[other]} ${r} ${a[pv]}, so ${verdict}.`;
         }

@@ -80,7 +80,7 @@ export default function Playground({ algo }: { algo: Algo }) {
       />
       <div className="btn-row">
         <button type="button" className="btn" onClick={sample} disabled={busy} data-testid="pg-sample">Sort sample data</button>
-        <button type="button" className="btn" onClick={() => { const v = parsed(algo.maxInput); if (v) { setViz(null); runPlain(v); } }} disabled={busy} data-testid="pg-run">Run (no GUI)</button>
+        <button type="button" className="btn" onClick={() => { const values = parsed(algo.maxInput); if (values) { setViz(null); runPlain(values); } }} disabled={busy} data-testid="pg-run">Run (no GUI)</button>
         <button type="button" className="btn primary" onClick={runViz} disabled={busy} data-testid="pg-viz">Run with visualization</button>
       </div>
       <p id="pg-error" className="error" role="alert" data-testid="pg-error">{error}</p>

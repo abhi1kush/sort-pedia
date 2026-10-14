@@ -53,9 +53,9 @@ fn intro(mut arr: &mut [i32], mut depth: u32) {
         if arr[pivot_pos] < arr[0] { arr.swap(pivot_pos, 0); }
         if arr[mid] < arr[pivot_pos] { arr.swap(mid, pivot_pos); } // median now at arr[pivot_pos]
         let mut store_pos = 0;
-        for scan in 0..pivot_pos {
-            if arr[scan] < arr[pivot_pos] {
-                arr.swap(store_pos, scan);
+        for i in 0..pivot_pos {
+            if arr[i] < arr[pivot_pos] {
+                arr.swap(store_pos, i);
                 store_pos += 1;
             }
         }

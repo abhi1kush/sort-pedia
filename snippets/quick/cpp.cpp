@@ -9,11 +9,11 @@ static void quick(std::vector<int>& arr, int lo, int hi) {
     while (lo < hi) {
         std::uniform_int_distribution<int> pick(lo, hi);
         std::swap(arr[lo], arr[pick(rng)]);
-        int pivot = arr[lo], lessEnd = lo, scan = lo + 1, greaterStart = hi;
-        while (scan <= greaterStart) {
-            if (arr[scan] < pivot) std::swap(arr[lessEnd++], arr[scan++]);
-            else if (arr[scan] > pivot) std::swap(arr[scan], arr[greaterStart--]);
-            else scan++;
+        int pivot = arr[lo], lessEnd = lo, i = lo + 1, greaterStart = hi;
+        while (i <= greaterStart) {
+            if (arr[i] < pivot) std::swap(arr[lessEnd++], arr[i++]);
+            else if (arr[i] > pivot) std::swap(arr[i], arr[greaterStart--]);
+            else i++;
         }
         if (lessEnd - lo < hi - greaterStart) { quick(arr, lo, lessEnd - 1); lo = greaterStart + 1; }
         else { quick(arr, greaterStart + 1, hi); hi = lessEnd - 1; }

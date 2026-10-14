@@ -15,7 +15,7 @@ pub const OP_COMPARE_HELD: i32 = 5; // x = index, y = held value compared agains
 /// Pointer names used by OP_POINTER, indexed by id (camelCase; the UI shows them as words,
 /// e.g. "lessEnd" -> "less end"). Mirrored in src/trace.ts.
 pub const POINTER_NAMES: [&str; 29] = [
-    "lo", "hi", "mid", "pivot", "lessEnd", "greaterStart", "scan", "storePos", "current", "hole", "key", "gap", "runStart", "fillPos", "minIndex", "sortedFrom", "writePos", "rightPos", "heapEnd", "node", "child", "left", "right", "pairStart", "gnomePos", "cycleStart", "targetPos", "lastUnsorted", "maxIndex",
+    "lo", "hi", "mid", "pivot", "lessEnd", "greaterStart", "i", "storePos", "current", "hole", "key", "gap", "runStart", "fillPos", "minIndex", "sortedFrom", "writePos", "rightPos", "heapEnd", "node", "child", "left", "right", "pairStart", "gnomePos", "cycleStart", "targetPos", "lastUnsorted", "maxIndex",
 ];
 #[allow(dead_code)]
 pub mod p {
@@ -25,7 +25,7 @@ pub mod p {
     pub const PIVOT: i32 = 3;
     pub const LESS_END: i32 = 4;
     pub const GREATER_START: i32 = 5;
-    pub const SCAN: i32 = 6;
+    pub const I: i32 = 6;
     pub const STORE_POS: i32 = 7;
     pub const CURRENT: i32 = 8;
     pub const HOLE: i32 = 9;

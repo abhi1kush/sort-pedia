@@ -102,8 +102,8 @@ describe('TracePlayer step forward / back', () => {
     expect(p.array).toEqual([2, 1]);
   });
   it('describes pivot comparisons for quick sort', () => {
-    const p = new TracePlayer([5, 7, 3], [OP_POINTER, P('pivot'), 0, OP_POINTER, P('scan'), 1, OP_COMPARE, 1, 0, OP_COMPARE, 2, 0], 'quick');
+    const p = new TracePlayer([5, 7, 3], [OP_POINTER, P('pivot'), 0, OP_POINTER, P('i'), 1, OP_COMPARE, 1, 0, OP_COMPARE, 2, 0], 'quick');
     p.forward();
-    expect(p.caption).toBe('Compare arr[1]=7 (scan) with pivot 5: 7 > 5, so it joins the "greater" block (swap to greater start; greater start moves left).');
+    expect(p.caption).toBe('Compare arr[1]=7 (i) with pivot 5: 7 > 5, so it joins the "greater" block (swap to greater start; greater start moves left).');
   });
 });

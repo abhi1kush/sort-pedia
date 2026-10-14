@@ -194,17 +194,17 @@ fn intro_rec(c: &mut Ctx, mut lo: usize, mut hi: usize, mut depth: usize) {
         c.ptr(p::PIVOT, pv);
         let mut store_pos = lo;
         c.ptr(p::STORE_POS, store_pos);
-        for scan in lo..pv {
-            c.ptr(p::SCAN, scan);
-            if c.less(scan, pv) {
-                if store_pos != scan { c.swap(store_pos, scan); }
+        for i in lo..pv {
+            c.ptr(p::I, i);
+            if c.less(i, pv) {
+                if store_pos != i { c.swap(store_pos, i); }
                 store_pos += 1;
                 c.ptr(p::STORE_POS, store_pos);
             }
         }
         if store_pos != pv { c.swap(store_pos, pv); }
         c.sorted(store_pos, store_pos + 1);
-        c.hide(p::PIVOT); c.hide(p::SCAN); c.hide(p::STORE_POS);
+        c.hide(p::PIVOT); c.hide(p::I); c.hide(p::STORE_POS);
         // recurse into smaller side, loop on larger
         if store_pos - lo < hi - store_pos - 1 {
             intro_rec(c, lo, store_pos, depth);
@@ -231,23 +231,23 @@ fn quick_rec(c: &mut Ctx, mut lo: usize, mut hi: usize) {
         let pivot_index = lo + c.rand(hi - lo + 1);
         if pivot_index != lo { c.swap(lo, pivot_index); }
         let pivot = c.get(lo);
-        let (mut less_end, mut scan, mut greater_start) = (lo, lo + 1, hi);
-        // invariant: arr[less_end..scan) == pivot, so arr[less_end] always holds the pivot value
-        let show = |c: &mut Ctx, less_end: usize, scan: usize, greater_start: usize| {
+        let (mut less_end, mut i, mut greater_start) = (lo, lo + 1, hi);
+        // invariant: arr[less_end..i) == pivot, so arr[less_end] always holds the pivot value
+        let show = |c: &mut Ctx, less_end: usize, i: usize, greater_start: usize| {
             c.ptr(p::PIVOT, less_end); c.ptr(p::LESS_END, less_end); c.ptr(p::GREATER_START, greater_start);
-            if scan <= greater_start { c.ptr(p::SCAN, scan); } else { c.hide(p::SCAN); }
+            if i <= greater_start { c.ptr(p::I, i); } else { c.hide(p::I); }
         };
-        show(c, less_end, scan, greater_start);
-        while scan <= greater_start {
-            match c.cmp_val(c.get(scan), pivot, scan, less_end) {
-                Ordering::Less => { c.swap(less_end, scan); less_end += 1; scan += 1; }
-                Ordering::Greater => { c.swap(scan, greater_start); greater_start -= 1; }
-                Ordering::Equal => { scan += 1; }
+        show(c, less_end, i, greater_start);
+        while i <= greater_start {
+            match c.cmp_val(c.get(i), pivot, i, less_end) {
+                Ordering::Less => { c.swap(less_end, i); less_end += 1; i += 1; }
+                Ordering::Greater => { c.swap(i, greater_start); greater_start -= 1; }
+                Ordering::Equal => { i += 1; }
             }
-            show(c, less_end, scan, greater_start);
+            show(c, less_end, i, greater_start);
         }
         c.sorted(less_end, greater_start + 1);
-        for name in [p::PIVOT, p::LESS_END, p::SCAN, p::GREATER_START, p::LO, p::HI] { c.hide(name); }
+        for name in [p::PIVOT, p::LESS_END, p::I, p::GREATER_START, p::LO, p::HI] { c.hide(name); }
         // arr[lo..less_end) < pivot, arr[less_end..=greater_start] == pivot, arr(greater_start..=hi] > pivot
         if less_end - lo < hi - greater_start {
             if less_end > lo { quick_rec(c, lo, less_end - 1); }
@@ -448,14 +448,14 @@ pub fn selection(c: &mut Ctx) {
         let mut min_index = fill_pos;
         c.ptr(p::FILL_POS, fill_pos);
         c.ptr(p::MIN_INDEX, min_index);
-        for scan in fill_pos + 1..n {
-            c.ptr(p::SCAN, scan);
-            if c.less(scan, min_index) { min_index = scan; c.ptr(p::MIN_INDEX, min_index); }
+        for i in fill_pos + 1..n {
+            c.ptr(p::I, i);
+            if c.less(i, min_index) { min_index = i; c.ptr(p::MIN_INDEX, min_index); }
         }
         if min_index != fill_pos { c.swap(fill_pos, min_index); }
         c.sorted(fill_pos, fill_pos + 1);
     }
-    for name in [p::FILL_POS, p::SCAN, p::MIN_INDEX] { c.hide(name); }
+    for name in [p::FILL_POS, p::I, p::MIN_INDEX] { c.hide(name); }
 }
 
 // ---------------------------------------------------------------- 14. Cocktail shaker sort
@@ -468,9 +468,9 @@ pub fn cocktail(c: &mut Ctx) {
         let mut last = lo;
         c.ptr(p::LO, lo);
         c.ptr(p::HI, hi);
-        for scan in lo..hi {
-            c.ptr(p::SCAN, scan);
-            if c.less(scan + 1, scan) { c.swap(scan, scan + 1); swapped = true; last = scan; }
+        for i in lo..hi {
+            c.ptr(p::I, i);
+            if c.less(i + 1, i) { c.swap(i, i + 1); swapped = true; last = i; }
         }
         c.sorted(last + 1, hi + 1);
         if !swapped { break; }
@@ -478,9 +478,9 @@ pub fn cocktail(c: &mut Ctx) {
         swapped = false;
         let mut first = hi;
         c.ptr(p::HI, hi);
-        for scan in (lo..hi).rev() {
-            c.ptr(p::SCAN, scan);
-            if c.less(scan + 1, scan) { c.swap(scan, scan + 1); swapped = true; first = scan + 1; }
+        for i in (lo..hi).rev() {
+            c.ptr(p::I, i);
+            if c.less(i + 1, i) { c.swap(i, i + 1); swapped = true; first = i + 1; }
         }
         c.sorted(lo, first);
         if !swapped { break; }
@@ -495,15 +495,15 @@ pub fn bubble(c: &mut Ctx) {
     while sorted_from > 1 {
         let mut last = 0;
         if sorted_from < n { c.ptr(p::SORTED_FROM, sorted_from); } else { c.hide(p::SORTED_FROM); }
-        for scan in 1..sorted_from {
-            c.ptr(p::SCAN, scan);
-            if c.less(scan, scan - 1) { c.swap(scan - 1, scan); last = scan; }
+        for i in 1..sorted_from {
+            c.ptr(p::I, i);
+            if c.less(i, i - 1) { c.swap(i - 1, i); last = i; }
         }
         // everything from the last swap to the old sorted_from is in final position
         c.sorted(last, sorted_from);
         sorted_from = last;
     }
-    c.hide(p::SCAN);
+    c.hide(p::I);
     c.hide(p::SORTED_FROM);
 }
 
@@ -546,9 +546,9 @@ pub fn cycle(c: &mut Ctx) {
         let mut item = c.get(cycle_start);
         c.ptr(p::CYCLE_START, cycle_start);
         let mut target_pos = cycle_start;
-        for scan in cycle_start + 1..n {
-            c.ptr(p::SCAN, scan);
-            if c.less_than_held(scan, item) { target_pos += 1; }
+        for i in cycle_start + 1..n {
+            c.ptr(p::I, i);
+            if c.less_than_held(i, item) { target_pos += 1; }
         }
         c.ptr(p::TARGET_POS, target_pos);
         if target_pos == cycle_start { c.sorted(cycle_start, cycle_start + 1); continue; }
@@ -558,9 +558,9 @@ pub fn cycle(c: &mut Ctx) {
         item = old;
         while target_pos != cycle_start {
             target_pos = cycle_start;
-            for scan in cycle_start + 1..n {
-                c.ptr(p::SCAN, scan);
-                if c.less_than_held(scan, item) { target_pos += 1; }
+            for i in cycle_start + 1..n {
+                c.ptr(p::I, i);
+                if c.less_than_held(i, item) { target_pos += 1; }
             }
             c.ptr(p::TARGET_POS, target_pos);
             while c.held_eq(item, target_pos) { target_pos += 1; c.ptr(p::TARGET_POS, target_pos); }
@@ -574,7 +574,7 @@ pub fn cycle(c: &mut Ctx) {
         }
         c.sorted(cycle_start, cycle_start + 1);
     }
-    for name in [p::CYCLE_START, p::SCAN, p::TARGET_POS] { c.hide(name); }
+    for name in [p::CYCLE_START, p::I, p::TARGET_POS] { c.hide(name); }
 }
 
 // ---------------------------------------------------------------- 19. Pancake sort
@@ -590,9 +590,9 @@ pub fn pancake(c: &mut Ctx) {
         c.ptr(p::LAST_UNSORTED, size - 1);
         let mut max_index = 0;
         c.ptr(p::MAX_INDEX, max_index);
-        for scan in 1..size {
-            c.ptr(p::SCAN, scan);
-            if c.less(max_index, scan) { max_index = scan; c.ptr(p::MAX_INDEX, max_index); }
+        for i in 1..size {
+            c.ptr(p::I, i);
+            if c.less(max_index, i) { max_index = i; c.ptr(p::MAX_INDEX, max_index); }
         }
         if max_index != size - 1 {
             if max_index != 0 { flip(c, max_index); }

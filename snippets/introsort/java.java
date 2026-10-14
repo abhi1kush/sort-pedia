@@ -36,7 +36,7 @@ class IntroSort {
             if (arr[pivotPos] < arr[lo]) swap(arr, pivotPos, lo);
             if (arr[mid] < arr[pivotPos]) swap(arr, mid, pivotPos);   // median now at arr[pivotPos]
             int storePos = lo;
-            for (int scan = lo; scan < pivotPos; scan++) if (arr[scan] < arr[pivotPos]) swap(arr, storePos++, scan);
+            for (int i = lo; i < pivotPos; i++) if (arr[i] < arr[pivotPos]) swap(arr, storePos++, i);
             swap(arr, storePos, pivotPos);
             if (storePos - lo < hi - storePos - 1) { intro(arr, lo, storePos, depth); lo = storePos + 1; }
             else { intro(arr, storePos + 1, hi, depth); hi = storePos; }

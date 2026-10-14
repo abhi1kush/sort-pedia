@@ -213,7 +213,7 @@ try {
   check('progress scrubber seeks', (await stepOf(page)) === Math.floor(total / 2), `${await stepOf(page)} vs ${Math.floor(total / 2)}`);
 
   for (const [algoId, ptrs, capRe] of [
-    ['quick', ['pivot', 'scan', 'lessEnd', 'greaterStart'], /pivot \d+: \d+ [<>=] \d+, so it (joins the "less" block|joins the "greater" block|stays with the pivot copies)/],
+    ['quick', ['pivot', 'i', 'lessEnd', 'greaterStart'], /pivot \d+: \d+ [<>=] \d+, so it (joins the "less" block|joins the "greater" block|stays with the pivot copies)/],
     ['insertion', ['key', 'hole'], /Compare key \d+ with arr\[\d+\]=\d+|Write \d+ into arr\[/],
     ['merge', ['writePos', 'rightPos', 'mid'], /left-run value \d+ with arr\[\d+\]=\d+ \(.*right pos.*\)|Write \d+ into arr\[\d+\]/],
   ]) {
@@ -229,7 +229,7 @@ try {
     check(`${algoId}: pointer markers shown (${ptrs.join(', ')})`, missing.length === 0, `missing ${missing} seen ${[...seen]}`);
     check(`${algoId}: plain-language captions shown`, [...caps].some((c) => capRe.test(c)), [...caps].slice(0, 3).join(' | '));
     const shown = await page.locator('[data-testid=viz-pointers] .ptr-name').allInnerTexts();
-    check(`${algoId}: no cryptic pointer labels on screen`, !shown.some((t) => /^(lt|gt|i|j|k|m|a)$/.test(t.trim())), shown.join(','));
+    check(`${algoId}: no cryptic pointer labels on screen`, !shown.some((t) => t.split(/,\s*/).some((x) => /^(lt|gt|j|k|m|a|scan)$/.test(x.trim()))), shown.join(','));
     check(`${algoId}: captions say arr[...] not a[...]`, ![...caps].some((c) => /\ba\[/.test(c)), [...caps].find((c) => /\ba\[/.test(c)));
     const legend = await page.locator('[data-testid=viz-ptr-legend] [data-legend]').evaluateAll((e) => e.map((x) => x.dataset.legend));
     check(`${algoId}: pointer legend lists ${ptrs.join(', ')}`, ptrs.every((x) => legend.includes(x)), legend.join(','));
@@ -245,6 +245,33 @@ try {
       check('quick: legend highlights active pointers', (await lg.locator('[data-legend].active').count()) > 0);
       await page.locator('[data-testid=playground]').screenshot({ path: `${OUT}/sort-pedia-names.png` });
     }
+  }
+
+  console.log('Quick sort text: plain-language steps, notation, pointer i');
+  {
+    const qp = await newPage({ width: 1280, height: 1500 });
+    await startViz(qp, 'quick', teach);
+    await qp.click('[data-testid=viz-play]'); // pause
+    const steps = await qp.locator('ol.steps').innerText();
+    check('quick steps: plain language (random pivot, i moves left to right, less/greater blocks)', /Pick a random element as the pivot/.test(steps) && /Move i from left to right/.test(steps) && /"less" block/.test(steps) && /"greater" block/.test(steps), steps.slice(0, 200));
+    check('quick steps: no stale symbols (v, lt, gt, scan, "three pointers")', !/\b(v|lt|gt|scan)\b|three pointers/.test(steps), steps);
+    const pseudo = await qp.locator('pre.pseudo').innerText();
+    check('quick pseudocode uses i, lessEnd, greaterStart and arr', /\bi ← lo \+ 1/.test(pseudo) && /lessEnd/.test(pseudo) && /greaterStart/.test(pseudo) && !/\b(scan|lt|gt|v)\b/.test(pseudo), pseudo);
+    check('notation line defines arr and n', /arr = the array being sorted/.test(await qp.locator('[data-testid=notation]').innerText()) && /n = number of elements/.test(await qp.locator('[data-testid=notation]').innerText()));
+    const seenI = new Set();
+    for (let k = 0; k < 30 && !/with pivot/.test(await qp.locator('[data-testid=viz-caption]').innerText()); k++) await qp.click('[data-testid=viz-step]');
+    for (let k = 0; k < 6; k++) { await qp.click('[data-testid=viz-step]'); (await qp.locator('[data-testid=viz-pointers] .ptr-name').allInnerTexts()).forEach((t) => t.split(/,\s*/).forEach((x) => seenI.add(x.trim()))); }
+    check('quick visualizer shows the i label (not scan)', seenI.has('i') && !seenI.has('scan'), [...seenI].join('|'));
+    for (let k = 0; k < 40 && !/with pivot/.test(await qp.locator('[data-testid=viz-caption]').innerText()); k++) await qp.click('[data-testid=viz-step]');
+    check('quick caption refers to i', /\(i\)|\bi move/.test(await qp.locator('[data-testid=viz-caption]').innerText()), await qp.locator('[data-testid=viz-caption]').innerText());
+    const lg = qp.locator('[data-testid=viz-ptr-legend]');
+    if (!(await lg.evaluate((d) => d.open))) await lg.locator('summary').click();
+    check('quick legend explains i as the current index', /current index/.test(await lg.locator('[data-legend=i]').innerText()));
+    const top = await qp.locator('section[aria-label="Algorithm explanation"]').boundingBox();
+    const vz = await qp.locator('[data-testid=viz]').boundingBox();
+    const y0 = top.y + (await qp.evaluate(() => window.scrollY)), y1 = vz.y + vz.height + (await qp.evaluate(() => window.scrollY));
+    await qp.screenshot({ path: `${OUT}/sort-pedia-quick-text.png`, fullPage: true, clip: { x: 0, y: y0 - 10, width: 1280, height: y1 - y0 + 20 } });
+    await qp.context().close();
   }
 
   console.log('Theme');
