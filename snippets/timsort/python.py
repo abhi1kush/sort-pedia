@@ -11,31 +11,31 @@ def _min_run(n):
     return n + r
 
 
-def _merge(a, lo, mid, hi):
-    tmp = a[lo:mid]
+def _merge(arr, lo, mid, hi):
+    temp = arr[lo:mid]
     i, j, k = 0, mid, lo
-    while i < len(tmp) and j < hi:
-        if a[j] < tmp[i]:
-            a[k] = a[j]
+    while i < len(temp) and j < hi:
+        if arr[j] < temp[i]:
+            arr[k] = arr[j]
             j += 1
         else:
-            a[k] = tmp[i]
+            arr[k] = temp[i]
             i += 1
         k += 1
-    a[k:k + len(tmp) - i] = tmp[i:]
+    arr[k:k + len(temp) - i] = temp[i:]
 
 
-def sort_array(a):
-    n = len(a)
+def sort_array(arr):
+    n = len(arr)
     if n < 2:
-        return a
+        return arr
     min_run = _min_run(n)
     runs = []  # [start, length]
 
     def merge_at(i):
         s, l1 = runs[i]
         l2 = runs[i + 1][1]
-        _merge(a, s, s + l1, s + l1 + l2)
+        _merge(arr, s, s + l1, s + l1 + l2)
         runs[i] = [s, l1 + l2]
         del runs[i + 1]
 
@@ -43,20 +43,20 @@ def sort_array(a):
     while lo < n:
         hi = lo + 1
         if hi < n:
-            if a[hi] < a[lo]:  # strictly descending: reverse
-                while hi + 1 < n and a[hi + 1] < a[hi]:
+            if arr[hi] < arr[lo]:  # strictly descending: reverse
+                while hi + 1 < n and arr[hi + 1] < arr[hi]:
                     hi += 1
-                a[lo:hi + 1] = a[lo:hi + 1][::-1]
+                arr[lo:hi + 1] = arr[lo:hi + 1][::-1]
             else:
-                while hi + 1 < n and a[hi + 1] >= a[hi]:
+                while hi + 1 < n and arr[hi + 1] >= arr[hi]:
                     hi += 1
             hi += 1
         end = max(min(n, lo + min_run), hi)
         for i in range(hi, end):  # binary insertion sort
-            key = a[i]
-            pos = bisect_right(a, key, lo, i)
-            a[pos + 1:i + 1] = a[pos:i]
-            a[pos] = key
+            key = arr[i]
+            pos = bisect_right(arr, key, lo, i)
+            arr[pos + 1:i + 1] = arr[pos:i]
+            arr[pos] = key
         runs.append([lo, end - lo])
         lo = end
         while len(runs) > 1:
@@ -70,4 +70,4 @@ def sort_array(a):
                 break
     while len(runs) > 1:
         merge_at(len(runs) - 2)
-    return a
+    return arr

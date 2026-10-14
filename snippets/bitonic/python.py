@@ -8,26 +8,26 @@ def _pow2_below(n):
     return k
 
 
-def _merge(a, lo, n, up):
+def _merge(arr, lo, n, up):
     if n <= 1:
         return
-    m = _pow2_below(n)
-    for i in range(lo, lo + n - m):
-        if (a[i] > a[i + m]) == up:
-            a[i], a[i + m] = a[i + m], a[i]
-    _merge(a, lo, m, up)
-    _merge(a, lo + m, n - m, up)
+    distance = _pow2_below(n)
+    for left in range(lo, lo + n - distance):
+        if (arr[left] > arr[left + distance]) == up:
+            arr[left], arr[left + distance] = arr[left + distance], arr[left]
+    _merge(arr, lo, distance, up)
+    _merge(arr, lo + distance, n - distance, up)
 
 
-def _bitonic(a, lo, n, up):
+def _bitonic(arr, lo, n, up):
     if n <= 1:
         return
-    m = n // 2
-    _bitonic(a, lo, m, not up)
-    _bitonic(a, lo + m, n - m, up)
-    _merge(a, lo, n, up)
+    half = n // 2
+    _bitonic(arr, lo, half, not up)
+    _bitonic(arr, lo + half, n - half, up)
+    _merge(arr, lo, n, up)
 
 
-def sort_array(a):
-    _bitonic(a, 0, len(a), True)
-    return a
+def sort_array(arr):
+    _bitonic(arr, 0, len(arr), True)
+    return arr

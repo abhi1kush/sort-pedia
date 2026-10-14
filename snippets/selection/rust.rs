@@ -1,14 +1,14 @@
 // Selection sort: repeatedly select the minimum of the unsorted suffix.
 
-pub fn sort_array(a: &mut [i32]) {
-    let n = a.len();
-    for i in 0..n.saturating_sub(1) {
-        let mut m = i;
-        for j in i + 1..n {
-            if a[j] < a[m] {
-                m = j;
+pub fn sort_array(arr: &mut [i32]) {
+    let n = arr.len();
+    for fill_pos in 0..n.saturating_sub(1) {
+        let mut min_index = fill_pos;
+        for scan in fill_pos + 1..n {
+            if arr[scan] < arr[min_index] {
+                min_index = scan;
             }
         }
-        a.swap(i, m);
+        arr.swap(fill_pos, min_index);
     }
 }

@@ -8,31 +8,31 @@ fn pow2_below(n: usize) -> usize {
     k
 }
 
-fn bitonic_merge(a: &mut [i32], lo: usize, n: usize, up: bool) {
+fn bitonic_merge(arr: &mut [i32], lo: usize, n: usize, up: bool) {
     if n <= 1 {
         return;
     }
-    let m = pow2_below(n);
-    for i in lo..lo + n - m {
-        if (up && a[i] > a[i + m]) || (!up && a[i] < a[i + m]) {
-            a.swap(i, i + m);
+    let distance = pow2_below(n);
+    for left in lo..lo + n - distance {
+        if (up && arr[left] > arr[left + distance]) || (!up && arr[left] < arr[left + distance]) {
+            arr.swap(left, left + distance);
         }
     }
-    bitonic_merge(a, lo, m, up);
-    bitonic_merge(a, lo + m, n - m, up);
+    bitonic_merge(arr, lo, distance, up);
+    bitonic_merge(arr, lo + distance, n - distance, up);
 }
 
-fn bitonic(a: &mut [i32], lo: usize, n: usize, up: bool) {
+fn bitonic(arr: &mut [i32], lo: usize, n: usize, up: bool) {
     if n <= 1 {
         return;
     }
-    let m = n / 2;
-    bitonic(a, lo, m, !up);
-    bitonic(a, lo + m, n - m, up);
-    bitonic_merge(a, lo, n, up);
+    let half = n / 2;
+    bitonic(arr, lo, half, !up);
+    bitonic(arr, lo + half, n - half, up);
+    bitonic_merge(arr, lo, n, up);
 }
 
-pub fn sort_array(a: &mut [i32]) {
-    let n = a.len();
-    bitonic(a, 0, n, true);
+pub fn sort_array(arr: &mut [i32]) {
+    let n = arr.len();
+    bitonic(arr, 0, n, true);
 }

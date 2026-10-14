@@ -2,10 +2,10 @@
 #include <utility>
 #include <vector>
 
-void sortArray(std::vector<int>& a) {
-    size_t i = 0;
-    while (i < a.size()) {
-        if (i == 0 || a[i] >= a[i - 1]) i++;
-        else { std::swap(a[i], a[i - 1]); i--; }
+void sortArray(std::vector<int>& arr) {
+    size_t gnomePos = 0;
+    while (gnomePos < arr.size()) {
+        if (gnomePos == 0 || arr[gnomePos] >= arr[gnomePos - 1]) gnomePos++;
+        else { std::swap(arr[gnomePos], arr[gnomePos - 1]); gnomePos--; }
     }
 }

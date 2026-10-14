@@ -2,14 +2,14 @@ package main
 
 // Selection sort: repeatedly select the minimum of the unsorted suffix.
 
-func sortArray(a []int) {
-	for i := 0; i+1 < len(a); i++ {
-		m := i
-		for j := i + 1; j < len(a); j++ {
-			if a[j] < a[m] {
-				m = j
+func sortArray(arr []int) {
+	for fillPos := 0; fillPos+1 < len(arr); fillPos++ {
+		minIndex := fillPos
+		for scan := fillPos + 1; scan < len(arr); scan++ {
+			if arr[scan] < arr[minIndex] {
+				minIndex = scan
 			}
 		}
-		a[i], a[m] = a[m], a[i]
+		arr[fillPos], arr[minIndex] = arr[minIndex], arr[fillPos]
 	}
 }

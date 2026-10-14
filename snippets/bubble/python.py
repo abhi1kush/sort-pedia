@@ -1,13 +1,13 @@
 """Bubble sort with early exit when a pass makes no swaps."""
 
 
-def sort_array(a):
-    for end in range(len(a), 1, -1):
+def sort_array(arr):
+    for sorted_from in range(len(arr), 1, -1):
         swapped = False
-        for i in range(1, end):
-            if a[i] < a[i - 1]:
-                a[i], a[i - 1] = a[i - 1], a[i]
+        for scan in range(1, sorted_from):
+            if arr[scan] < arr[scan - 1]:
+                arr[scan], arr[scan - 1] = arr[scan - 1], arr[scan]
                 swapped = True
         if not swapped:
             break
-    return a
+    return arr

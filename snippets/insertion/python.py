@@ -1,11 +1,11 @@
 """Insertion sort: grow a sorted prefix one element at a time."""
 
 
-def sort_array(a):
-    for i in range(1, len(a)):
-        key, j = a[i], i
-        while j > 0 and key < a[j - 1]:
-            a[j] = a[j - 1]
-            j -= 1
-        a[j] = key
-    return a
+def sort_array(arr):
+    for current in range(1, len(arr)):
+        key, hole = arr[current], current
+        while hole > 0 and key < arr[hole - 1]:
+            arr[hole] = arr[hole - 1]
+            hole -= 1
+        arr[hole] = key
+    return arr

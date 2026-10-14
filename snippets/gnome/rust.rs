@@ -1,13 +1,13 @@
 // Gnome sort: step forward while in order, otherwise swap and step back.
 
-pub fn sort_array(a: &mut [i32]) {
-    let mut i = 0;
-    while i < a.len() {
-        if i == 0 || a[i] >= a[i - 1] {
-            i += 1;
+pub fn sort_array(arr: &mut [i32]) {
+    let mut gnome_pos = 0;
+    while gnome_pos < arr.len() {
+        if gnome_pos == 0 || arr[gnome_pos] >= arr[gnome_pos - 1] {
+            gnome_pos += 1;
         } else {
-            a.swap(i, i - 1);
-            i -= 1;
+            arr.swap(gnome_pos, gnome_pos - 1);
+            gnome_pos -= 1;
         }
     }
 }

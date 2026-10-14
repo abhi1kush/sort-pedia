@@ -2,12 +2,12 @@
 #include <algorithm>
 #include <vector>
 
-void sortArray(std::vector<int>& a) {
-    for (size_t size = a.size(); size > 1; size--) {
-        size_t mi = std::max_element(a.begin(), a.begin() + size) - a.begin();
-        if (mi != size - 1) {
-            std::reverse(a.begin(), a.begin() + mi + 1);   // flip max to front
-            std::reverse(a.begin(), a.begin() + size);     // flip it to the end
+void sortArray(std::vector<int>& arr) {
+    for (size_t unsortedSize = arr.size(); unsortedSize > 1; unsortedSize--) {
+        size_t maxIndex = std::max_element(arr.begin(), arr.begin() + unsortedSize) - arr.begin();
+        if (maxIndex != unsortedSize - 1) {
+            std::reverse(arr.begin(), arr.begin() + maxIndex + 1);   // flip max to front
+            std::reverse(arr.begin(), arr.begin() + unsortedSize);     // flip it to the end
         }
     }
 }

@@ -2,22 +2,22 @@
 #include <utility>
 #include <vector>
 
-static void siftDown(std::vector<int>& a, int root, int n) {
+static void siftDown(std::vector<int>& arr, int node, int n) {
     for (;;) {
-        int child = 2 * root + 1;
+        int child = 2 * node + 1;
         if (child >= n) return;
-        if (child + 1 < n && a[child] < a[child + 1]) child++;
-        if (a[root] >= a[child]) return;
-        std::swap(a[root], a[child]);
-        root = child;
+        if (child + 1 < n && arr[child] < arr[child + 1]) child++;
+        if (arr[node] >= arr[child]) return;
+        std::swap(arr[node], arr[child]);
+        node = child;
     }
 }
 
-void sortArray(std::vector<int>& a) {
-    int n = static_cast<int>(a.size());
-    for (int i = n / 2 - 1; i >= 0; i--) siftDown(a, i, n);
-    for (int end = n - 1; end > 0; end--) {
-        std::swap(a[0], a[end]);
-        siftDown(a, 0, end);
+void sortArray(std::vector<int>& arr) {
+    int n = static_cast<int>(arr.size());
+    for (int node = n / 2 - 1; node >= 0; node--) siftDown(arr, node, n);
+    for (int heapEnd = n - 1; heapEnd > 0; heapEnd--) {
+        std::swap(arr[0], arr[heapEnd]);
+        siftDown(arr, 0, heapEnd);
     }
 }

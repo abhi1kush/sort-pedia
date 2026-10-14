@@ -8,38 +8,38 @@ fn next_rand(state: &mut u64) -> u64 {
     *state
 }
 
-fn quick(a: &mut [i32], rng: &mut u64) {
-    let (mut lo, mut hi) = (0usize, a.len());
-    // sort a[lo..hi)
+fn quick(arr: &mut [i32], rng: &mut u64) {
+    let (mut lo, mut hi) = (0usize, arr.len());
+    // sort arr[lo..hi)
     while hi - lo > 1 {
-        let p = lo + (next_rand(rng) % (hi - lo) as u64) as usize;
-        a.swap(lo, p);
-        let v = a[lo];
-        let (mut lt, mut i, mut gt) = (lo, lo + 1, hi);
-        while i < gt {
-            if a[i] < v {
-                a.swap(lt, i);
-                lt += 1;
-                i += 1;
-            } else if a[i] > v {
-                gt -= 1;
-                a.swap(i, gt);
+        let pivot_index = lo + (next_rand(rng) % (hi - lo) as u64) as usize;
+        arr.swap(lo, pivot_index);
+        let pivot = arr[lo];
+        let (mut less_end, mut scan, mut greater_start) = (lo, lo + 1, hi);
+        while scan < greater_start {
+            if arr[scan] < pivot {
+                arr.swap(less_end, scan);
+                less_end += 1;
+                scan += 1;
+            } else if arr[scan] > pivot {
+                greater_start -= 1;
+                arr.swap(scan, greater_start);
             } else {
-                i += 1;
+                scan += 1;
             }
         }
-        // a[lo..lt) < v, a[lt..gt) == v, a[gt..hi) > v
-        if lt - lo < hi - gt {
-            quick(&mut a[lo..lt], rng);
-            lo = gt;
+        // arr[lo..less_end) < pivot, arr[less_end..greater_start) == pivot, arr[greater_start..hi) > pivot
+        if less_end - lo < hi - greater_start {
+            quick(&mut arr[lo..less_end], rng);
+            lo = greater_start;
         } else {
-            quick(&mut a[gt..hi], rng);
-            hi = lt;
+            quick(&mut arr[greater_start..hi], rng);
+            hi = less_end;
         }
     }
 }
 
-pub fn sort_array(a: &mut [i32]) {
+pub fn sort_array(arr: &mut [i32]) {
     let mut rng = 0x2545_F491_4F6C_DD1D_u64;
-    quick(a, &mut rng);
+    quick(arr, &mut rng);
 }

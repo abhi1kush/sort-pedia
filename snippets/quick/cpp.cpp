@@ -5,19 +5,19 @@
 
 static std::mt19937 rng(12345);
 
-static void quick(std::vector<int>& a, int lo, int hi) {
+static void quick(std::vector<int>& arr, int lo, int hi) {
     while (lo < hi) {
         std::uniform_int_distribution<int> pick(lo, hi);
-        std::swap(a[lo], a[pick(rng)]);
-        int v = a[lo], lt = lo, i = lo + 1, gt = hi;
-        while (i <= gt) {
-            if (a[i] < v) std::swap(a[lt++], a[i++]);
-            else if (a[i] > v) std::swap(a[i], a[gt--]);
-            else i++;
+        std::swap(arr[lo], arr[pick(rng)]);
+        int pivot = arr[lo], lessEnd = lo, scan = lo + 1, greaterStart = hi;
+        while (scan <= greaterStart) {
+            if (arr[scan] < pivot) std::swap(arr[lessEnd++], arr[scan++]);
+            else if (arr[scan] > pivot) std::swap(arr[scan], arr[greaterStart--]);
+            else scan++;
         }
-        if (lt - lo < hi - gt) { quick(a, lo, lt - 1); lo = gt + 1; }
-        else { quick(a, gt + 1, hi); hi = lt - 1; }
+        if (lessEnd - lo < hi - greaterStart) { quick(arr, lo, lessEnd - 1); lo = greaterStart + 1; }
+        else { quick(arr, greaterStart + 1, hi); hi = lessEnd - 1; }
     }
 }
 
-void sortArray(std::vector<int>& a) { quick(a, 0, static_cast<int>(a.size()) - 1); }
+void sortArray(std::vector<int>& arr) { quick(arr, 0, static_cast<int>(arr.size()) - 1); }

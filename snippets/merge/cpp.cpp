@@ -1,19 +1,19 @@
 // Top-down merge sort with one auxiliary buffer. Stable, O(n log n).
 #include <vector>
 
-static void mergeSort(std::vector<int>& a, std::vector<int>& tmp, int lo, int hi) {
+static void mergeSort(std::vector<int>& arr, std::vector<int>& temp, int lo, int hi) {
     if (hi - lo < 2) return;
     int mid = lo + (hi - lo) / 2;
-    mergeSort(a, tmp, lo, mid);
-    mergeSort(a, tmp, mid, hi);
-    int i = lo, j = mid, k = lo;
-    while (i < mid && j < hi) tmp[k++] = (a[j] < a[i]) ? a[j++] : a[i++];
-    while (i < mid) tmp[k++] = a[i++];
-    while (j < hi) tmp[k++] = a[j++];
-    for (k = lo; k < hi; k++) a[k] = tmp[k];
+    mergeSort(arr, temp, lo, mid);
+    mergeSort(arr, temp, mid, hi);
+    int leftPos = lo, rightPos = mid, writePos = lo;
+    while (leftPos < mid && rightPos < hi) temp[writePos++] = (arr[rightPos] < arr[leftPos]) ? arr[rightPos++] : arr[leftPos++];
+    while (leftPos < mid) temp[writePos++] = arr[leftPos++];
+    while (rightPos < hi) temp[writePos++] = arr[rightPos++];
+    for (writePos = lo; writePos < hi; writePos++) arr[writePos] = temp[writePos];
 }
 
-void sortArray(std::vector<int>& a) {
-    std::vector<int> tmp(a.size());
-    mergeSort(a, tmp, 0, static_cast<int>(a.size()));
+void sortArray(std::vector<int>& arr) {
+    std::vector<int> temp(arr.size());
+    mergeSort(arr, temp, 0, static_cast<int>(arr.size()));
 }

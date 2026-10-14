@@ -133,7 +133,15 @@ textarea[aria-invalid='true'] { border-color: var(--bad); }
 .ptr-arrow { font-size: 9px; }
 .ptr-name { background: var(--card); border: 1px solid var(--border); border-radius: 3px; padding: 0 2px; margin-top: 1px; white-space: nowrap; }
 .ptr-arrow { line-height: .8; }
-.ptr-pivot, .ptr-key, .ptr-min, .ptr-max, .ptr-item { color: var(--bad); }
+.ptr-pivot, .ptr-key, .ptr-minIndex, .ptr-maxIndex { color: var(--bad); }
+.ptr-legend { margin-top: .5rem; border: 1px solid var(--border); border-radius: 8px; padding: .4rem .6rem; background: var(--soft); }
+.ptr-legend summary { cursor: pointer; font-weight: 600; }
+.ptr-legend dl { margin: .3rem 0 0; display: grid; gap: .15rem; }
+.ptr-legend dl > div { display: grid; grid-template-columns: minmax(6.5rem, max-content) 1fr; gap: .5rem; padding: .1rem .2rem; border-radius: 4px; }
+.ptr-legend dl > div.active { background: var(--accent-2); }
+.ptr-legend dt { font-family: ui-monospace, monospace; font-weight: 700; color: var(--ptr); }
+.ptr-legend dt.ptr-pivot, .ptr-legend dt.ptr-key, .ptr-legend dt.ptr-minIndex, .ptr-legend dt.ptr-maxIndex { color: var(--bad); }
+.ptr-legend dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
 .viz-caption { min-height: 2.6em; margin: .5rem 0 .2rem; padding: .4rem .6rem; border-left: 4px solid var(--accent); background: var(--soft); border-radius: 4px; overflow-wrap: anywhere; }
 .viz-counters { display: flex; flex-wrap: wrap; gap: .2rem 1rem; font-variant-numeric: tabular-nums; }
 .scrub input { width: 100%; accent-color: var(--accent); }

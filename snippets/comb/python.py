@@ -1,14 +1,14 @@
 """Comb sort: bubble sort over a shrinking gap (factor 1.3)."""
 
 
-def sort_array(a):
-    gap, done = len(a), False
+def sort_array(arr):
+    gap, done = len(arr), False
     while not done:
         gap = int(gap / 1.3)
         if gap <= 1:
             gap, done = 1, True
-        for i in range(len(a) - gap):
-            if a[i + gap] < a[i]:
-                a[i], a[i + gap] = a[i + gap], a[i]
+        for left in range(len(arr) - gap):
+            if arr[left + gap] < arr[left]:
+                arr[left], arr[left + gap] = arr[left + gap], arr[left]
                 done = False
-    return a
+    return arr

@@ -74,7 +74,7 @@ pub fn sort(id: &str, data: Vec<i32>, record: bool) -> Result<SortResult, JsErro
     let mut c = Ctx::new(data, record);
     run_on(id, &mut c).map_err(|e| JsError::new(&e))?;
     Ok(SortResult {
-        sorted: c.a,
+        sorted: c.arr,
         trace: c.trace,
         comparisons: c.comparisons as f64,
         swaps: c.swaps as f64,

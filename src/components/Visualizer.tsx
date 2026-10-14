@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { OP_COMPARE, OP_COMPARE_HELD, OP_SET, OP_SWAP, TracePlayer, VALUE_POINTERS } from '../trace';
+import { OP_COMPARE, OP_COMPARE_HELD, OP_SET, OP_SWAP, TracePlayer, VALUE_POINTERS, pointerHelp, pointerLabel } from '../trace';
 import { DEFAULT_SPS, PRESETS, SLIDER_MAX, formatSps, sliderToSps, spsToSlider, tickPlan } from '../speed';
 
 interface Props { algoId: string; input: number[]; trace: Int32Array; sorted: number[]; truncated: boolean }
@@ -81,7 +81,7 @@ export default function Visualizer({ algoId, input, trace, sorted, truncated }: 
   const byIndex = new Map<number, string[]>();
   const valuePtrs: string[] = [];
   for (const [name, v] of player.pointers) {
-    if (VALUE_POINTERS.has(name)) { valuePtrs.push(`${name} = ${v}`); continue; }
+    if (VALUE_POINTERS.has(name)) { valuePtrs.push(`${pointerLabel(name)} = ${v}`); continue; }
     if (v < 0 || v >= n) continue;
     byIndex.set(v, [...(byIndex.get(v) ?? []), name]);
   }
@@ -91,7 +91,7 @@ export default function Visualizer({ algoId, input, trace, sorted, truncated }: 
   const placed: { idx: number; text: string; names: string[]; row: number; center: number }[] = [];
   const rowEnd: number[] = [];
   for (const [idx, names] of [...byIndex.entries()].sort((a, b) => a[0] - b[0])) {
-    const text = names.join(',');
+    const text = names.map(pointerLabel).join(', ');
     const half = (text.length * 7 + 8) / 2; // approx label half-width in px (11px monospace)
     const inner = Math.max(2 * half, width - 10);
     const center = Math.min(Math.max((idx + 0.5) * pxPerBar, half), inner - half); // keep labels inside the box
@@ -106,7 +106,7 @@ export default function Visualizer({ algoId, input, trace, sorted, truncated }: 
     <div className="viz" data-testid="viz" ref={rootRef}>
       <div className="bars" data-testid="viz-bars">
         {arr.map((v, k) => (
-          <div key={k} className={cls(k)} style={{ height: `${height(v)}%` }} data-value={v} data-tip={`a[${k}] = ${v}`}>
+          <div key={k} className={cls(k)} style={{ height: `${height(v)}%` }} data-value={v} data-tip={`arr[${k}] = ${v}`}>
             {showValues && <span className="bar-val">{v}</span>}
           </div>
         ))}
@@ -116,7 +116,7 @@ export default function Visualizer({ algoId, input, trace, sorted, truncated }: 
           <div key={idx} className="ptr" style={{ left: `${center + 4}px`, top: `${row * 1.35}rem` }} data-index={idx}>
             <span className="ptr-arrow" aria-hidden="true">▲</span>
             <span className="ptr-name">
-              {names.map((nm, q) => <span key={nm} className={`ptr-${nm}`} data-ptr={nm}>{q ? ',' : ''}{nm}</span>)}
+              {names.map((nm, q) => <span key={nm} className={`ptr-${nm}`} data-ptr={nm}>{q ? ', ' : ''}{pointerLabel(nm)}</span>)}
             </span>
           </div>
         ))}
@@ -159,6 +159,19 @@ export default function Visualizer({ algoId, input, trace, sorted, truncated }: 
           <output data-testid="viz-speed-value">{formatSps(sps)}</output>
         </label>
       </div>
+      {player.pointerNamesUsed.length > 0 && (
+        <details className="ptr-legend small" open data-testid="viz-ptr-legend">
+          <summary>What the pointers mean</summary>
+          <dl>
+            {player.pointerNamesUsed.map((nm) => (
+              <div key={nm} className={player.pointers.has(nm) ? 'active' : ''} data-legend={nm}>
+                <dt className={`ptr-${nm}`}>{pointerLabel(nm)}</dt>
+                <dd>{pointerHelp(algoId, nm)}</dd>
+              </div>
+            ))}
+          </dl>
+        </details>
+      )}
       <div className="viz-legend small">
         <span><i className="sw cmp" /> compare</span><span><i className="sw swap" /> swap</span><span><i className="sw set" /> write</span>
         <span><i className="sw sorted" /> final position</span><span className="muted">Keys: Space play/pause · ← back · → forward</span>

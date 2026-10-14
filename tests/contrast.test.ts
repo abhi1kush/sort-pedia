@@ -17,7 +17,7 @@ const ratio = (a: string, b: string) => { const [x, y] = [lum(a), lum(b)].sort((
 const TEXT: [string, string][] = [
   ['text', 'bg'], ['text', 'card'], ['muted', 'card'], ['muted', 'bg'], ['accent', 'card'], ['accent', 'bg'], ['on-accent', 'accent'],
   ['chip-text', 'accent-2'], ['bad', 'card'], ['ok', 'card'], ['text', 'input-bg'], ['text', 'soft'], ['topbar-text', 'topbar'],
-  ['badge-text', 'badge'], ['badge-text', 'badge-yes'], ['badge-text', 'badge-no'], ['tip-text', 'tip-bg'], ['ptr', 'card'], ['bad', 'soft'],
+  ['badge-text', 'badge'], ['badge-text', 'badge-yes'], ['badge-text', 'badge-no'], ['tip-text', 'tip-bg'], ['ptr', 'card'], ['bad', 'soft'], ['ptr', 'accent-2'], ['bad', 'accent-2'], ['text', 'accent-2'],
   ['code-text', 'code-bg'], ['tok-comment', 'code-bg'], ['tok-keyword', 'code-bg'], ['tok-function', 'code-bg'], ['tok-number', 'code-bg'],
   ['tok-string', 'code-bg'], ['tok-operator', 'code-bg'], ['tok-class', 'code-bg'], ['tok-macro', 'code-bg'], ['text', 'viz-bg'],
 ];

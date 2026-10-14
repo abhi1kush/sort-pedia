@@ -1,10 +1,10 @@
 // Selection sort: repeatedly select the minimum of the unsorted suffix.
 class SelectionSort {
-    public static void sort(int[] a) {
-        for (int i = 0; i + 1 < a.length; i++) {
-            int m = i;
-            for (int j = i + 1; j < a.length; j++) if (a[j] < a[m]) m = j;
-            int t = a[i]; a[i] = a[m]; a[m] = t;
+    public static void sort(int[] arr) {
+        for (int fillPos = 0; fillPos + 1 < arr.length; fillPos++) {
+            int minIndex = fillPos;
+            for (int scan = fillPos + 1; scan < arr.length; scan++) if (arr[scan] < arr[minIndex]) minIndex = scan;
+            int t = arr[fillPos]; arr[fillPos] = arr[minIndex]; arr[minIndex] = t;
         }
     }
 }

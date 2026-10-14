@@ -9,17 +9,17 @@ static int min_run(int n) {
     return n + r;
 }
 
-static void merge_runs(int *a, int lo, int mid, int hi) {
+static void merge_runs(int *arr, int lo, int mid, int hi) {
     int len = mid - lo;
-    int *tmp = malloc(sizeof(int) * (len > 0 ? len : 1));
-    memcpy(tmp, a + lo, sizeof(int) * len);
+    int *temp = malloc(sizeof(int) * (len > 0 ? len : 1));
+    memcpy(temp, arr + lo, sizeof(int) * len);
     int i = 0, j = mid, k = lo;
-    while (i < len && j < hi) a[k++] = (a[j] < tmp[i]) ? a[j++] : tmp[i++];
-    while (i < len) a[k++] = tmp[i++];
-    free(tmp);
+    while (i < len && j < hi) arr[k++] = (arr[j] < temp[i]) ? arr[j++] : temp[i++];
+    while (i < len) arr[k++] = temp[i++];
+    free(temp);
 }
 
-void sort_array(int *a, int n) {
+void sort_array(int *arr, int n) {
     if (n < 2) return;
     int minrun = min_run(n);
     int *start = malloc(sizeof(int) * (n + 1)), *len = malloc(sizeof(int) * (n + 1));
@@ -27,21 +27,21 @@ void sort_array(int *a, int n) {
     while (lo < n) {
         int hi = lo + 1;
         if (hi < n) {
-            if (a[hi] < a[lo]) {               /* strictly descending run: reverse it */
-                while (hi + 1 < n && a[hi + 1] < a[hi]) hi++;
-                for (int x = lo, y = hi; x < y; x++, y--) { int t = a[x]; a[x] = a[y]; a[y] = t; }
+            if (arr[hi] < arr[lo]) {               /* strictly descending run: reverse it */
+                while (hi + 1 < n && arr[hi + 1] < arr[hi]) hi++;
+                for (int x = lo, y = hi; x < y; x++, y--) { int t = arr[x]; arr[x] = arr[y]; arr[y] = t; }
             } else {
-                while (hi + 1 < n && a[hi + 1] >= a[hi]) hi++;
+                while (hi + 1 < n && arr[hi + 1] >= arr[hi]) hi++;
             }
             hi++;
         }
         int end = lo + minrun < n ? lo + minrun : n;
         if (end < hi) end = hi;
         for (int i = hi; i < end; i++) {      /* binary insertion sort */
-            int key = a[i], l = lo, r = i;
-            while (l < r) { int m = (l + r) / 2; if (key < a[m]) r = m; else l = m + 1; }
-            memmove(a + l + 1, a + l, sizeof(int) * (i - l));
-            a[l] = key;
+            int key = arr[i], l = lo, r = i;
+            while (l < r) { int m = (l + r) / 2; if (key < arr[m]) r = m; else l = m + 1; }
+            memmove(arr + l + 1, arr + l, sizeof(int) * (i - l));
+            arr[l] = key;
         }
         start[top] = lo; len[top] = end - lo; top++;
         lo = end;
@@ -51,7 +51,7 @@ void sort_array(int *a, int n) {
                 at = (len[top - 3] < c) ? top - 3 : top - 2;
             else if (b <= c) at = top - 2;
             else break;
-            merge_runs(a, start[at], start[at] + len[at], start[at] + len[at] + len[at + 1]);
+            merge_runs(arr, start[at], start[at] + len[at], start[at] + len[at] + len[at + 1]);
             len[at] += len[at + 1];
             for (int k = at + 1; k < top - 1; k++) { start[k] = start[k + 1]; len[k] = len[k + 1]; }
             top--;
@@ -59,7 +59,7 @@ void sort_array(int *a, int n) {
     }
     while (top > 1) {
         int at = top - 2;
-        merge_runs(a, start[at], start[at] + len[at], start[at] + len[at] + len[at + 1]);
+        merge_runs(arr, start[at], start[at] + len[at], start[at] + len[at] + len[at + 1]);
         len[at] += len[at + 1];
         top--;
     }

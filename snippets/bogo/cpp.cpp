@@ -3,7 +3,7 @@
 #include <random>
 #include <vector>
 
-void sortArray(std::vector<int>& a) {
+void sortArray(std::vector<int>& arr) {
     std::mt19937 rng(42);
-    while (!std::is_sorted(a.begin(), a.end())) std::shuffle(a.begin(), a.end(), rng);
+    while (!std::is_sorted(arr.begin(), arr.end())) std::shuffle(arr.begin(), arr.end(), rng);
 }

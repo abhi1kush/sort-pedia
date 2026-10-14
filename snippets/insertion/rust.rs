@@ -1,13 +1,13 @@
 // Insertion sort: grow a sorted prefix one element at a time.
 
-pub fn sort_array(a: &mut [i32]) {
-    for i in 1..a.len() {
-        let key = a[i];
-        let mut j = i;
-        while j > 0 && key < a[j - 1] {
-            a[j] = a[j - 1];
-            j -= 1;
+pub fn sort_array(arr: &mut [i32]) {
+    for current in 1..arr.len() {
+        let key = arr[current];
+        let mut hole = current;
+        while hole > 0 && key < arr[hole - 1] {
+            arr[hole] = arr[hole - 1];
+            hole -= 1;
         }
-        a[j] = key;
+        arr[hole] = key;
     }
 }

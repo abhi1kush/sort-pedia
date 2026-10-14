@@ -2,7 +2,7 @@
 import random
 
 
-def sort_array(a):
-    while any(a[i] > a[i + 1] for i in range(len(a) - 1)):
-        random.shuffle(a)
-    return a
+def sort_array(arr):
+    while any(arr[i] > arr[i + 1] for i in range(len(arr) - 1)):
+        random.shuffle(arr)
+    return arr

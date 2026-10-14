@@ -2,27 +2,27 @@ package main
 
 // Top-down merge sort with one auxiliary buffer. Stable, O(n log n).
 
-func mergeSort(a, tmp []int, lo, hi int) {
+func mergeSort(arr, temp []int, lo, hi int) {
 	if hi-lo < 2 {
 		return
 	}
 	mid := lo + (hi-lo)/2
-	mergeSort(a, tmp, lo, mid)
-	mergeSort(a, tmp, mid, hi)
-	i, j, k := lo, mid, lo
-	for i < mid && j < hi {
-		if a[j] < a[i] {
-			tmp[k] = a[j]
-			j++
+	mergeSort(arr, temp, lo, mid)
+	mergeSort(arr, temp, mid, hi)
+	leftPos, rightPos, writePos := lo, mid, lo
+	for leftPos < mid && rightPos < hi {
+		if arr[rightPos] < arr[leftPos] {
+			temp[writePos] = arr[rightPos]
+			rightPos++
 		} else {
-			tmp[k] = a[i]
-			i++
+			temp[writePos] = arr[leftPos]
+			leftPos++
 		}
-		k++
+		writePos++
 	}
-	k += copy(tmp[k:], a[i:mid])
-	copy(tmp[k:], a[j:hi])
-	copy(a[lo:hi], tmp[lo:hi])
+	writePos += copy(temp[writePos:], arr[leftPos:mid])
+	copy(temp[writePos:], arr[rightPos:hi])
+	copy(arr[lo:hi], temp[lo:hi])
 }
 
-func sortArray(a []int) { mergeSort(a, make([]int, len(a)), 0, len(a)) }
+func sortArray(arr []int) { mergeSort(arr, make([]int, len(arr)), 0, len(arr)) }

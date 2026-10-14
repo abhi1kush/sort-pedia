@@ -2,30 +2,30 @@ package main
 
 // Heap sort: build a max-heap, then repeatedly move the max to the end.
 
-func siftDown(a []int, root, n int) {
+func siftDown(arr []int, node, n int) {
 	for {
-		child := 2*root + 1
+		child := 2*node + 1
 		if child >= n {
 			return
 		}
-		if child+1 < n && a[child] < a[child+1] {
+		if child+1 < n && arr[child] < arr[child+1] {
 			child++
 		}
-		if a[root] >= a[child] {
+		if arr[node] >= arr[child] {
 			return
 		}
-		a[root], a[child] = a[child], a[root]
-		root = child
+		arr[node], arr[child] = arr[child], arr[node]
+		node = child
 	}
 }
 
-func sortArray(a []int) {
-	n := len(a)
-	for i := n/2 - 1; i >= 0; i-- {
-		siftDown(a, i, n)
+func sortArray(arr []int) {
+	n := len(arr)
+	for node := n/2 - 1; node >= 0; node-- {
+		siftDown(arr, node, n)
 	}
-	for end := n - 1; end > 0; end-- {
-		a[0], a[end] = a[end], a[0]
-		siftDown(a, 0, end)
+	for heapEnd := n - 1; heapEnd > 0; heapEnd-- {
+		arr[0], arr[heapEnd] = arr[heapEnd], arr[0]
+		siftDown(arr, 0, heapEnd)
 	}
 }

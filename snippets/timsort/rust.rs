@@ -10,31 +10,31 @@ fn min_run(mut n: usize) -> usize {
     n + r
 }
 
-fn merge_runs(a: &mut [i32], lo: usize, mid: usize, hi: usize) {
-    let tmp = a[lo..mid].to_vec();
+fn merge_runs(arr: &mut [i32], lo: usize, mid: usize, hi: usize) {
+    let temp = arr[lo..mid].to_vec();
     let (mut i, mut j, mut k) = (0, mid, lo);
-    while i < tmp.len() && j < hi {
-        if a[j] < tmp[i] {
-            a[k] = a[j];
+    while i < temp.len() && j < hi {
+        if arr[j] < temp[i] {
+            arr[k] = arr[j];
             j += 1;
         } else {
-            a[k] = tmp[i];
+            arr[k] = temp[i];
             i += 1;
         }
         k += 1;
     }
-    a[k..k + tmp.len() - i].copy_from_slice(&tmp[i..]);
+    arr[k..k + temp.len() - i].copy_from_slice(&temp[i..]);
 }
 
-fn merge_at(a: &mut [i32], runs: &mut Vec<(usize, usize)>, i: usize) {
+fn merge_at(arr: &mut [i32], runs: &mut Vec<(usize, usize)>, i: usize) {
     let ((s, l1), (_, l2)) = (runs[i], runs[i + 1]);
-    merge_runs(a, s, s + l1, s + l1 + l2);
+    merge_runs(arr, s, s + l1, s + l1 + l2);
     runs[i].1 = l1 + l2;
     runs.remove(i + 1);
 }
 
-pub fn sort_array(a: &mut [i32]) {
-    let n = a.len();
+pub fn sort_array(arr: &mut [i32]) {
+    let n = arr.len();
     if n < 2 {
         return;
     }
@@ -44,14 +44,14 @@ pub fn sort_array(a: &mut [i32]) {
     while lo < n {
         let mut hi = lo + 1;
         if hi < n {
-            if a[hi] < a[lo] {
+            if arr[hi] < arr[lo] {
                 // strictly descending: reverse
-                while hi + 1 < n && a[hi + 1] < a[hi] {
+                while hi + 1 < n && arr[hi + 1] < arr[hi] {
                     hi += 1;
                 }
-                a[lo..=hi].reverse();
+                arr[lo..=hi].reverse();
             } else {
-                while hi + 1 < n && a[hi + 1] >= a[hi] {
+                while hi + 1 < n && arr[hi + 1] >= arr[hi] {
                     hi += 1;
                 }
             }
@@ -60,10 +60,10 @@ pub fn sort_array(a: &mut [i32]) {
         let end = (lo + minrun).min(n).max(hi);
         for i in hi..end {
             // binary insertion sort
-            let key = a[i];
-            let pos = lo + a[lo..i].partition_point(|&x| x <= key);
-            a[pos..=i].rotate_right(1);
-            a[pos] = key;
+            let key = arr[i];
+            let pos = lo + arr[lo..i].partition_point(|&x| x <= key);
+            arr[pos..=i].rotate_right(1);
+            arr[pos] = key;
         }
         runs.push((lo, end - lo));
         lo = end;
@@ -72,9 +72,9 @@ pub fn sort_array(a: &mut [i32]) {
             let (b, c) = (runs[m - 2].1, runs[m - 1].1);
             if (m >= 3 && runs[m - 3].1 <= b + c) || (m >= 4 && runs[m - 4].1 <= runs[m - 3].1 + b) {
                 let at = if runs[m - 3].1 < c { m - 3 } else { m - 2 };
-                merge_at(a, &mut runs, at);
+                merge_at(arr, &mut runs, at);
             } else if b <= c {
-                merge_at(a, &mut runs, m - 2);
+                merge_at(arr, &mut runs, m - 2);
             } else {
                 break;
             }
@@ -82,6 +82,6 @@ pub fn sort_array(a: &mut [i32]) {
     }
     while runs.len() > 1 {
         let at = runs.len() - 2;
-        merge_at(a, &mut runs, at);
+        merge_at(arr, &mut runs, at);
     }
 }

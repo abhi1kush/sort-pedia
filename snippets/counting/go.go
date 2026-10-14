@@ -2,12 +2,12 @@ package main
 
 // Counting sort for integers in a known (small) range [min, max].
 
-func sortArray(a []int) {
-	if len(a) < 2 {
+func sortArray(arr []int) {
+	if len(arr) < 2 {
 		return
 	}
-	min, max := a[0], a[0]
-	for _, v := range a {
+	min, max := arr[0], arr[0]
+	for _, v := range arr {
 		if v < min {
 			min = v
 		}
@@ -16,14 +16,14 @@ func sortArray(a []int) {
 		}
 	}
 	count := make([]int, max-min+1)
-	for _, v := range a {
+	for _, v := range arr {
 		count[v-min]++
 	}
-	k := 0
+	writePos := 0
 	for v, c := range count {
 		for ; c > 0; c-- {
-			a[k] = v + min
-			k++
+			arr[writePos] = v + min
+			writePos++
 		}
 	}
 }

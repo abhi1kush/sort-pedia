@@ -2,30 +2,30 @@
 import random
 
 
-def _quick(a, lo, hi):
+def _quick(arr, lo, hi):
     while lo < hi:
-        p = random.randint(lo, hi)
-        a[lo], a[p] = a[p], a[lo]
-        v, lt, i, gt = a[lo], lo, lo + 1, hi
-        while i <= gt:
-            if a[i] < v:
-                a[lt], a[i] = a[i], a[lt]
-                lt += 1
-                i += 1
-            elif a[i] > v:
-                a[i], a[gt] = a[gt], a[i]
-                gt -= 1
+        pivot_index = random.randint(lo, hi)
+        arr[lo], arr[pivot_index] = arr[pivot_index], arr[lo]
+        pivot, less_end, scan, greater_start = arr[lo], lo, lo + 1, hi
+        while scan <= greater_start:
+            if arr[scan] < pivot:
+                arr[less_end], arr[scan] = arr[scan], arr[less_end]
+                less_end += 1
+                scan += 1
+            elif arr[scan] > pivot:
+                arr[scan], arr[greater_start] = arr[greater_start], arr[scan]
+                greater_start -= 1
             else:
-                i += 1
+                scan += 1
         # recurse on the smaller part, loop on the larger one
-        if lt - lo < hi - gt:
-            _quick(a, lo, lt - 1)
-            lo = gt + 1
+        if less_end - lo < hi - greater_start:
+            _quick(arr, lo, less_end - 1)
+            lo = greater_start + 1
         else:
-            _quick(a, gt + 1, hi)
-            hi = lt - 1
+            _quick(arr, greater_start + 1, hi)
+            hi = less_end - 1
 
 
-def sort_array(a):
-    _quick(a, 0, len(a) - 1)
-    return a
+def sort_array(arr):
+    _quick(arr, 0, len(arr) - 1)
+    return arr

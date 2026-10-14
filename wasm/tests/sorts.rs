@@ -7,7 +7,7 @@ fn check(id: &str, input: &[i32]) {
     expected.sort();
     let mut c = Ctx::new(input.to_vec(), true);
     run_on(id, &mut c).unwrap_or_else(|e| panic!("{id} failed on {input:?}: {e}"));
-    assert_eq!(c.a, expected, "{id} wrong result for {input:?}");
+    assert_eq!(c.arr, expected, "{id} wrong result for {input:?}");
     assert!(!c.truncated, "{id} trace truncated for {input:?}");
     assert_eq!(replay(input, &c.trace), expected, "{id} trace replay mismatch for {input:?}");
 }
@@ -70,7 +70,7 @@ fn large_random_fast_algorithms() {
         run_on(id, &mut c).unwrap();
         let mut e = data.clone();
         e.sort();
-        assert_eq!(c.a, e, "{id}");
+        assert_eq!(c.arr, e, "{id}");
     }
 }
 
@@ -110,14 +110,14 @@ fn check_trace_fields(id: &str, input: &[i32]) -> std::collections::HashSet<&'st
     let mut c = Ctx::new(input.to_vec(), true);
     run_on(id, &mut c).unwrap();
     let n = input.len() as i32;
-    let mut a = input.to_vec();
+    let mut arr = input.to_vec();
     let mut names = std::collections::HashSet::new();
     for op in c.trace.chunks_exact(3) {
         let (o, x, y) = (op[0], op[1], op[2]);
         match o {
             OP_COMPARE => assert!(x >= 0 && x < n && y >= 0 && y < n, "{id}: bad compare {op:?}"),
-            OP_SWAP => { assert!(x < n && y < n); a.swap(x as usize, y as usize); }
-            OP_SET => { assert!(x >= 0 && x < n); a[x as usize] = y; }
+            OP_SWAP => { assert!(x < n && y < n); arr.swap(x as usize, y as usize); }
+            OP_SET => { assert!(x >= 0 && x < n); arr[x as usize] = y; }
             OP_COMPARE_HELD => assert!(x >= 0 && x < n, "{id}: bad held compare {op:?}"),
             OP_POINTER => {
                 assert!(x >= 0 && (x as usize) < POINTER_NAMES.len(), "{id}: bad pointer id {op:?}");
@@ -127,12 +127,12 @@ fn check_trace_fields(id: &str, input: &[i32]) -> std::collections::HashSet<&'st
             }
             OP_SORTED => {
                 assert!(0 <= x && x < y && y <= n, "{id}: bad sorted range {op:?}");
-                assert_eq!(&a[x as usize..y as usize], &expected[x as usize..y as usize], "{id}: region {x}..{y} marked sorted too early on {input:?}");
+                assert_eq!(&arr[x as usize..y as usize], &expected[x as usize..y as usize], "{id}: region {x}..{y} marked sorted too early on {input:?}");
             }
             _ => panic!("{id}: unknown op {o}"),
         }
     }
-    assert_eq!(a, expected, "{id}: replay with pointer fields did not sort {input:?}");
+    assert_eq!(arr, expected, "{id}: replay with pointer fields did not sort {input:?}");
     names
 }
 
@@ -154,16 +154,22 @@ fn trace_pointer_fields_valid_for_all_algorithms() {
 fn main_algorithms_emit_named_pointers() {
     let input: Vec<i32> = vec![5, 3, 8, 1, 9, 2, 7, 4, 6, 0, 11, 10, 15, 13, 12, 14, 3, 8];
     let want: &[(&str, &[&str])] = &[
-        ("quick", &["pivot", "i", "lt", "gt", "lo", "hi"]),
-        ("insertion", &["key", "j", "i"]),
-        ("selection", &["i", "min", "j"]),
-        ("bubble", &["j", "end"]),
-        ("merge", &["k", "right", "lo", "mid", "hi"]),
-        ("heap", &["heap", "node", "child"]),
-        ("shell", &["gap", "i", "j", "key"]),
-        ("introsort", &["pivot", "i", "j"]),
-        ("cycle", &["start", "pos"]),
-        ("pancake", &["size", "max"]),
+        ("quick", &["pivot", "scan", "lessEnd", "greaterStart", "lo", "hi"]),
+        ("insertion", &["key", "hole", "current"]),
+        ("selection", &["fillPos", "minIndex", "scan"]),
+        ("bubble", &["scan", "sortedFrom"]),
+        ("merge", &["writePos", "rightPos", "lo", "mid", "hi"]),
+        ("heap", &["heapEnd", "node", "child"]),
+        ("shell", &["gap", "current", "hole", "key"]),
+        ("introsort", &["pivot", "storePos", "scan"]),
+        ("cycle", &["cycleStart", "targetPos", "scan"]),
+        ("pancake", &["lastUnsorted", "maxIndex", "scan"]),
+        ("comb", &["gap", "left", "right"]),
+        ("cocktail", &["lo", "hi", "scan"]),
+        ("gnome", &["gnomePos"]),
+        ("odd-even", &["pairStart"]),
+        ("counting", &["writePos"]),
+        ("timsort", &["runStart", "key"]),
     ];
     for (id, names) in want {
         let got = check_trace_fields(id, &input);
@@ -179,5 +185,13 @@ proptest! {
             if id == "bogo" { continue; }
             check_trace_fields(id, &v);
         }
+    }
+}
+
+#[test]
+fn no_cryptic_pointer_names() {
+    // Learner-facing names: no lt/gt/k/i/j/min/end style abbreviations.
+    for bad in ["lt", "gt", "i", "j", "k", "min", "max", "end", "heap", "pos", "size", "start"] {
+        assert!(!POINTER_NAMES.contains(&bad), "cryptic pointer name '{bad}' is still used");
     }
 }

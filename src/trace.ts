@@ -1,16 +1,65 @@
 // Trace format produced by the Rust core (wasm/src/ctx.rs): a flat Int32Array of [op, x, y] triples.
-export const OP_COMPARE = 0; // compare a[x] with a[y]
-export const OP_SWAP = 1; // swap a[x], a[y]
-export const OP_SET = 2; // a[x] = y
+export const OP_COMPARE = 0; // compare arr[x] with arr[y]
+export const OP_SWAP = 1; // swap arr[x], arr[y]
+export const OP_SET = 2; // arr[x] = y
 export const OP_POINTER = 3; // pointer POINTER_NAMES[x] at index y (-1 hides it; "gap" holds a value)
-export const OP_SORTED = 4; // a[x..y) is in its final position
-export const OP_COMPARE_HELD = 5; // compare held value y (key / left-run value / item) with a[x]
+export const OP_SORTED = 4; // arr[x..y) is in its final position
+export const OP_COMPARE_HELD = 5; // compare held value y (key / left-run value / item) with arr[x]
 
-/** Mirrors POINTER_NAMES in wasm/src/ctx.rs. */
+/** Mirrors POINTER_NAMES in wasm/src/ctx.rs (camelCase ids; shown to learners as words via pointerLabel). */
 export const POINTER_NAMES = [
-  'i', 'j', 'k', 'pivot', 'lo', 'hi', 'min', 'key', 'gap', 'mid', 'right', 'heap', 'node', 'child', 'end', 'lt',
-  'gt', 'start', 'pos', 'size', 'max',
+  'lo', 'hi', 'mid', 'pivot', 'lessEnd', 'greaterStart', 'scan', 'storePos', 'current', 'hole', 'key', 'gap', 'runStart',
+  'fillPos', 'minIndex', 'sortedFrom', 'writePos', 'rightPos', 'heapEnd', 'node', 'child', 'left', 'right', 'pairStart',
+  'gnomePos', 'cycleStart', 'targetPos', 'lastUnsorted', 'maxIndex',
 ] as const;
+
+/** "lessEnd" -> "less end", "minIndex" -> "min index". */
+export function pointerLabel(name: string): string {
+  return name.replace(/([A-Z])/g, ' $1').toLowerCase();
+}
+
+/** One-line explanation of each pointer, with per-algorithm overrides where the meaning differs. */
+export const POINTER_HELP: Record<string, string> = {
+  lo: 'first index of the range being worked on',
+  hi: 'last index of the range being worked on',
+  mid: 'where the left half ends and the right half begins',
+  pivot: 'position of the pivot value everything is compared with',
+  lessEnd: 'end of the "less than pivot" block: everything left of it is smaller than the pivot',
+  greaterStart: 'start of the "greater than pivot" block: everything right of it is larger than the pivot',
+  scan: 'the element currently being examined',
+  storePos: 'next slot for an element smaller than the pivot',
+  current: 'the element being inserted into the sorted part on its left',
+  hole: 'the empty slot the key moves through while larger elements shift right',
+  key: 'where the value being inserted (the key) currently sits / will be placed',
+  gap: 'distance between the two elements being compared',
+  runStart: 'start of the run being built or extended',
+  fillPos: 'the slot being filled with the next smallest value',
+  minIndex: 'index of the smallest value found so far in the unsorted part',
+  sortedFrom: 'first index of the sorted tail: from here to the end is final',
+  writePos: 'next output slot being written',
+  rightPos: 'next unused element of the right half',
+  heapEnd: 'last element still inside the heap; everything after it is sorted',
+  node: 'the parent being sifted down',
+  child: 'the larger child the parent is compared with',
+  left: 'left element of the compared pair',
+  right: 'right element of the compared pair (left + gap)',
+  pairStart: 'first element of the pair being compared',
+  gnomePos: 'where the gnome stands: it compares this element with the one on its left',
+  cycleStart: 'start of the cycle being rotated into place',
+  targetPos: 'final position of the item being carried (number of smaller elements)',
+  lastUnsorted: 'last slot of the unsorted part: the maximum gets flipped here',
+  maxIndex: 'index of the largest value found so far in the unsorted part',
+};
+export const POINTER_HELP_BY_ALGO: Record<string, Record<string, string>> = {
+  cocktail: { lo: 'first unsorted index (everything left of it is final)', hi: 'last unsorted index (everything right of it is final)' },
+  merge: { lo: 'first index of the two halves being merged', hi: 'last index of the two halves being merged' },
+  quick: { scan: 'the element currently compared with the pivot' },
+  timsort: { key: 'the element being binary-inserted into the run' },
+};
+export function pointerHelp(algoId: string, name: string): string {
+  return POINTER_HELP_BY_ALGO[algoId]?.[name] ?? POINTER_HELP[name] ?? '';
+}
+
 export const VALUE_POINTERS = new Set(['gap']);
 
 /** What the "held value" of OP_COMPARE_HELD is called, per algorithm. */
@@ -52,6 +101,8 @@ const CHECKPOINT_EVERY = 256;
  */
 export class TracePlayer {
   readonly total: number;
+  /** Pointer names that appear anywhere in this trace (for the legend), in a stable order. */
+  readonly pointerNamesUsed: string[];
   private steps: number[] = []; // raw op index of each visible step
   private checkpoints: Snapshot[] = [];
   private cur!: Snapshot;
@@ -60,7 +111,12 @@ export class TracePlayer {
   caption = '';
 
   constructor(readonly input: number[], readonly trace: ArrayLike<number>, readonly algoId = '') {
-    for (let k = 0; k < trace.length / 3; k++) if (isStepOp(trace[3 * k])) this.steps.push(k);
+    const used = new Set<string>();
+    for (let k = 0; k < trace.length / 3; k++) {
+      if (isStepOp(trace[3 * k])) this.steps.push(k);
+      else if (trace[3 * k] === OP_POINTER && trace[3 * k + 2] >= 0) used.add(POINTER_NAMES[trace[3 * k + 1]]);
+    }
+    this.pointerNamesUsed = POINTER_NAMES.filter((nm) => used.has(nm));
     this.total = this.steps.length;
     this.cur = { arr: [...input], ptrs: new Map(), sorted: new Uint8Array(input.length), cmp: 0, swaps: 0, writes: 0, raw: 0 };
     this.checkpoints.push(this.clone(this.cur));
@@ -131,14 +187,14 @@ export class TracePlayer {
 
   private label(idx: number): string {
     const names: string[] = [];
-    for (const [nm, v] of this.cur.ptrs) if (v === idx && !VALUE_POINTERS.has(nm)) names.push(nm);
+    for (const [nm, v] of this.cur.ptrs) if (v === idx && !VALUE_POINTERS.has(nm)) names.push(pointerLabel(nm));
     return names.length ? ` (${names.join(', ')})` : '';
   }
 
   /** Plain-language description of a visible op, from the state just before it is applied. */
   describe(op: number, x: number, y: number): string {
     const a = this.cur.arr;
-    const at = (i: number) => `a[${i}]=${a[i]}${this.label(i)}`;
+    const at = (i: number) => `arr[${i}]=${a[i]}${this.label(i)}`;
     const rel = (p: number, q: number) => (p < q ? '<' : p > q ? '>' : '=');
     const gap = this.cur.ptrs.get('gap');
     const gapNote = gap !== undefined ? ` [gap ${gap}]` : '';
@@ -148,8 +204,12 @@ export class TracePlayer {
         if (pv !== undefined && (x === pv || y === pv) && x !== y) {
           const other = x === pv ? y : x;
           const r = rel(a[other], a[pv]);
-          const verdict = r === '<' ? 'goes left of the pivot' : r === '>' ? 'goes right of the pivot' : 'equals the pivot';
-          return `Compare ${at(other)} with pivot ${a[pv]}: ${a[other]} ${r} ${a[pv]}, so it ${verdict}.`;
+          const verdict = this.algoId === 'quick'
+            ? (r === '<' ? 'it joins the "less" block (swap to less end; less end and scan move right)'
+              : r === '>' ? 'it joins the "greater" block (swap to greater start; greater start moves left)'
+              : 'it stays with the pivot copies (scan moves right)')
+            : r === '<' ? 'it goes left of the pivot' : r === '>' ? 'it goes right of the pivot' : 'it equals the pivot';
+          return `Compare ${at(other)} with pivot ${a[pv]}: ${a[other]} ${r} ${a[pv]}, so ${verdict}.`;
         }
         return `Compare ${at(x)} with ${at(y)}: ${a[x]} ${rel(a[x], a[y])} ${a[y]}.${gapNote}`;
       }
@@ -164,7 +224,7 @@ export class TracePlayer {
       case OP_SWAP:
         return `Swap ${at(x)} and ${at(y)}.`;
       case OP_SET:
-        return `Write ${y} into a[${x}]${this.label(x)} (was ${a[x]}).`;
+        return `Write ${y} into arr[${x}]${this.label(x)} (was ${a[x]}).`;
       default:
         return '';
     }

@@ -1,20 +1,20 @@
 """Cycle sort: rotate each permutation cycle into place (minimum writes)."""
 
 
-def sort_array(a):
-    n = len(a)
-    for start in range(n - 1):
-        item = a[start]
-        pos = start + sum(1 for x in a[start + 1:] if x < item)
-        if pos == start:
+def sort_array(arr):
+    n = len(arr)
+    for cycle_start in range(n - 1):
+        item = arr[cycle_start]
+        target_pos = cycle_start + sum(1 for x in arr[cycle_start + 1:] if x < item)
+        if target_pos == cycle_start:
             continue
-        while item == a[pos]:
-            pos += 1
-        a[pos], item = item, a[pos]
-        while pos != start:
-            pos = start + sum(1 for x in a[start + 1:] if x < item)
-            while item == a[pos]:
-                pos += 1
-            if item != a[pos]:
-                a[pos], item = item, a[pos]
-    return a
+        while item == arr[target_pos]:
+            target_pos += 1
+        arr[target_pos], item = item, arr[target_pos]
+        while target_pos != cycle_start:
+            target_pos = cycle_start + sum(1 for x in arr[cycle_start + 1:] if x < item)
+            while item == arr[target_pos]:
+                target_pos += 1
+            if item != arr[target_pos]:
+                arr[target_pos], item = item, arr[target_pos]
+    return arr

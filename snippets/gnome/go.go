@@ -2,14 +2,14 @@ package main
 
 // Gnome sort: step forward while in order, otherwise swap and step back.
 
-func sortArray(a []int) {
-	i := 0
-	for i < len(a) {
-		if i == 0 || a[i] >= a[i-1] {
-			i++
+func sortArray(arr []int) {
+	gnomePos := 0
+	for gnomePos < len(arr) {
+		if gnomePos == 0 || arr[gnomePos] >= arr[gnomePos-1] {
+			gnomePos++
 		} else {
-			a[i], a[i-1] = a[i-1], a[i]
-			i--
+			arr[gnomePos], arr[gnomePos-1] = arr[gnomePos-1], arr[gnomePos]
+			gnomePos--
 		}
 	}
 }

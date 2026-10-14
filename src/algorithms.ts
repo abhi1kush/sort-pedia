@@ -54,18 +54,18 @@ export const ALGORITHMS: Algo[] = [
       'Pick MINRUN between 32 and 64 so that n / MINRUN is close to a power of two.',
       'Scan left to right for a natural run: an ascending or strictly descending sequence (reverse descending runs).',
       'If the run is shorter than MINRUN, extend it with binary insertion sort.',
-      'Push the run onto a stack; while the top runs violate the size invariants (A > B + C and B > C), merge adjacent runs.',
+      'Push the run onto a stack; while the top runs violate the size invariants (arr > B + C and B > C), merge adjacent runs.',
       'At the end, merge everything left on the stack. Merges take from the left run on ties, keeping the sort stable.',
     ],
-    pseudocode: `timsort(A):
+    pseudocode: `timsort(arr):
   minrun ← computeMinRun(n)
   runs ← empty stack
   lo ← 0
   while lo < n:
     hi ← end of natural run starting at lo
-    if run is strictly descending: reverse A[lo..hi)
+    if run is strictly descending: reverse arr[lo..hi)
     end ← max(hi, min(n, lo + minrun))
-    binaryInsertionSort(A, lo, hi, end)
+    binaryInsertionSort(arr, lo, hi, end)
     push (lo, end - lo) on runs
     mergeCollapse(runs)       // keep |A| > |B|+|C|, |B| > |C|
     lo ← end
@@ -81,20 +81,24 @@ export const ALGORITHMS: Algo[] = [
     bad: 'When stability is required, or data is mostly sorted (it does not exploit existing order like Timsort).',
     uses: ['C++ std::sort (libstdc++, MSVC)', '.NET Array.Sort', 'Go sort.Sort (pdqsort, a descendant)'],
     steps: [
-      'Set a depth limit of about 2·log2(n).',
-      'While the range has more than 16 elements: if the depth limit hits 0, heapsort this range and stop.',
-      'Otherwise choose the median of first, middle and last as pivot and partition around it.',
-      'Recurse into the smaller side and loop on the larger one (bounded stack).',
-      'Finish small ranges with insertion sort.',
+      "Set a depth limit of about 2·log2(n).",
+      "While the range has more than 16 elements: if the depth limit hits 0, heapsort this range and stop.",
+      "Otherwise put the median of first, middle and last at the end as the pivot, then partition: scan walks the range and every element smaller than the pivot is swapped to storePos, which then moves right.",
+      "Swap the pivot into storePos (its final place). Recurse into the smaller side and loop on the larger one (bounded stack).",
+      "Finish small ranges with insertion sort.",
     ],
-    pseudocode: `introsort(A, lo, hi, depth):
+    pseudocode: `introsort(arr, lo, hi, depth):
   while hi - lo > 16:
     if depth = 0:
-      heapsort(A, lo, hi); return
+      heapsort(arr, lo, hi); return
     depth ← depth - 1
-    p ← partition(A, lo, hi, medianOf3(lo, mid, hi-1))
-    recurse on smaller of [lo, p) and [p+1, hi); loop on the other
-  insertionSort(A, lo, hi)`,
+    pivotPos ← hi - 1   // after moving the median of three there
+    storePos ← lo
+    for scan ← lo to pivotPos - 1:
+      if arr[scan] < arr[pivotPos]: swap arr[storePos], arr[scan]; storePos++
+    swap arr[storePos], arr[pivotPos]
+    recurse on smaller of [lo, storePos) and [storePos+1, hi); loop on the other
+  insertionSort(arr, lo, hi)`,
     maxInput: LIMIT_FAST, maxViz: VIZ, benchSizes: FAST,
   },
   {
@@ -106,21 +110,23 @@ export const ALGORITHMS: Algo[] = [
     bad: 'Adversarial inputs against a fixed pivot rule, or when stability / a hard worst-case bound is required.',
     uses: ['Building block of introsort / pdqsort', 'Java Arrays.sort for primitives (dual-pivot quicksort)', 'C qsort implementations'],
     steps: [
-      'If the range has fewer than two elements, stop.',
-      'Choose a random pivot v and move it to the front.',
-      'Scan with three pointers lt, i, gt: values < v go left of lt, values > v go right of gt, equal values stay in the middle.',
-      'Recurse on the smaller outer part and loop on the larger one; the middle (= v) block is already in place.',
+      "If the range lo..hi has fewer than two elements, stop.",
+      "Choose a random pivot value and move it to the front (position lo).",
+      "Keep three pointers: lessEnd (everything left of it is < pivot), scan (the element being examined) and greaterStart (everything right of it is > pivot). Elements between lessEnd and scan equal the pivot.",
+      "Compare arr[scan] with the pivot: smaller → swap it to lessEnd and move lessEnd and scan right; larger → swap it to greaterStart and move greaterStart left; equal → just move scan right.",
+      "When scan passes greaterStart, the pivot block lessEnd..greaterStart is final. Recurse on the smaller outer part and loop on the larger one.",
     ],
-    pseudocode: `quick3(A, lo, hi):
+    pseudocode: `quick3(arr, lo, hi):
   if hi ≤ lo: return
-  swap A[lo], A[random(lo..hi)]
-  v ← A[lo]; lt ← lo; i ← lo + 1; gt ← hi
-  while i ≤ gt:
-    if A[i] < v: swap A[lt++], A[i++]
-    else if A[i] > v: swap A[i], A[gt--]
-    else: i++
-  quick3(A, lo, lt - 1)
-  quick3(A, gt + 1, hi)`,
+  swap arr[lo], arr[random(lo..hi)]
+  pivot ← arr[lo]
+  lessEnd ← lo; scan ← lo + 1; greaterStart ← hi
+  while scan ≤ greaterStart:
+    if arr[scan] < pivot: swap arr[lessEnd], arr[scan]; lessEnd++; scan++
+    else if arr[scan] > pivot: swap arr[scan], arr[greaterStart]; greaterStart--
+    else: scan++
+  quick3(arr, lo, lessEnd - 1)
+  quick3(arr, greaterStart + 1, hi)`,
     maxInput: LIMIT_FAST, maxViz: VIZ, benchSizes: FAST,
   },
   {
@@ -132,20 +138,21 @@ export const ALGORITHMS: Algo[] = [
     bad: 'Memory-constrained environments (O(n) buffer) and tiny arrays (recursion overhead).',
     uses: ['External sorting of huge files', 'Sorting linked lists', 'Counting inversions', 'GNU sort'],
     steps: [
-      'If the range has fewer than two elements, it is sorted.',
-      'Split it at the midpoint and sort both halves recursively.',
-      'Merge: repeatedly take the smaller head of the two halves (the left one on ties, for stability) into a buffer.',
-      'Copy the buffer back.',
+      "If the range lo..hi has fewer than two elements, it is sorted.",
+      "Split it at mid and sort both halves recursively.",
+      "Merge: leftPos and rightPos walk the two halves; repeatedly copy the smaller of arr[leftPos] and arr[rightPos] to writePos (the left one on ties, for stability).",
+      "Copy whatever remains of either half.",
     ],
-    pseudocode: `mergeSort(A, lo, hi):
+    pseudocode: `mergeSort(arr, lo, hi):
   if hi - lo < 2: return
   mid ← (lo + hi) / 2
-  mergeSort(A, lo, mid); mergeSort(A, mid, hi)
-  i ← lo; j ← mid
-  for k in lo..hi-1:
-    if j ≥ hi or (i < mid and A[i] ≤ A[j]): T[k] ← A[i++]
-    else: T[k] ← A[j++]
-  copy T[lo..hi) to A[lo..hi)`,
+  mergeSort(arr, lo, mid); mergeSort(arr, mid, hi)
+  leftPos ← lo; rightPos ← mid
+  for writePos in lo..hi-1:
+    if rightPos ≥ hi or (leftPos < mid and arr[leftPos] ≤ arr[rightPos]):
+      T[writePos] ← arr[leftPos++]
+    else: T[writePos] ← arr[rightPos++]
+  copy T[lo..hi) to arr[lo..hi)`,
     maxInput: LIMIT_FAST, maxViz: VIZ, benchSizes: FAST,
   },
   {
@@ -157,22 +164,22 @@ export const ALGORITHMS: Algo[] = [
     bad: 'Large arrays on modern CPUs (cache misses), and when stability is needed.',
     uses: ['Introsort fallback', 'Priority queues / top-k selection', 'Embedded systems (Linux kernel lib/sort.c)'],
     steps: [
-      'Heapify: sift down every internal node from n/2 - 1 to 0, so every parent ≥ its children.',
-      'Swap the root (maximum) with the last element of the heap; the heap shrinks by one.',
-      'Sift the new root down to restore the heap property.',
-      'Repeat until the heap has one element.',
+      "Heapify: sift down every parent node from n/2 - 1 to 0, so every node ≥ its children.",
+      "Swap the root (maximum) with the element at heapEnd, the last slot of the heap; that slot is now final and heapEnd moves left.",
+      "Sift the new root down: compare the node with its larger child and swap while the child is bigger.",
+      "Repeat until the heap has one element.",
     ],
-    pseudocode: `heapSort(A):
-  for i ← n/2 - 1 downto 0: siftDown(A, i, n)
-  for end ← n - 1 downto 1:
-    swap A[0], A[end]
-    siftDown(A, 0, end)
+    pseudocode: `heapSort(arr):
+  for node ← n/2 - 1 downto 0: siftDown(arr, node, n)
+  for heapEnd ← n - 1 downto 1:
+    swap arr[0], arr[heapEnd]
+    siftDown(arr, 0, heapEnd)    // heap is now arr[0..heapEnd)
 
-siftDown(A, root, n):
-  while 2·root + 1 < n:
-    child ← larger of the children of root
-    if A[root] ≥ A[child]: return
-    swap A[root], A[child]; root ← child`,
+siftDown(arr, node, size):
+  while 2·node + 1 < size:
+    child ← larger of the children of node
+    if arr[node] ≥ arr[child]: return
+    swap arr[node], arr[child]; node ← child`,
     maxInput: LIMIT_FAST, maxViz: VIZ, benchSizes: FAST,
   },
   {
@@ -190,15 +197,15 @@ siftDown(A, root, n):
       'Swap buffers and continue with the next byte until the highest non-zero byte of the max key.',
       'Add the minimum back.',
     ],
-    pseudocode: `radixLSD(A):
-  key[i] ← A[i] - min(A)
+    pseudocode: `radixLSD(arr):
+  key[i] ← arr[i] - min(arr)
   for shift ← 0, 8, 16, ... while (maxKey >> shift) > 0:
     count[0..256] ← 0
-    for k in key: count[((k >> shift) & 255) + 1]++
-    prefix-sum count
-    for k in key: out[count[(k >> shift) & 255]++] ← k
+    for k in key: count[digit(k, shift) + 1]++      // digit = (k >> shift) & 255
+    prefix-sum count                                // count[d] = first output slot for digit d
+    for k in key: out[count[digit(k, shift)]++] ← k
     swap key, out
-  A[i] ← key[i] + min(A)`,
+  arr[i] ← key[i] + min(arr)`,
     maxInput: LIMIT_FAST, maxViz: VIZ, benchSizes: FAST,
   },
   {
@@ -210,17 +217,17 @@ siftDown(A, root, n):
     bad: 'Large value ranges (k ≫ n) or non-integer keys.',
     uses: ['Building block of radix sort', 'Sorting bytes / characters', 'Histogram equalisation in image processing'],
     steps: [
-      'Find the minimum and maximum value; k = max - min + 1.',
-      'Allocate k counters and count occurrences of each value.',
-      'Walk the counters in increasing order and write each value as many times as it was counted.',
+      "Find the minimum and maximum value; k = max - min + 1.",
+      "Allocate k counters and count occurrences of each value.",
+      "Walk the counters in increasing order and write each value at writePos as many times as it was counted.",
     ],
-    pseudocode: `countingSort(A):
-  lo ← min(A); hi ← max(A)
+    pseudocode: `countingSort(arr):
+  lo ← min(arr); hi ← max(arr)
   count[0..hi-lo] ← 0
-  for v in A: count[v - lo]++
-  k ← 0
-  for v ← 0 to hi - lo:
-    repeat count[v] times: A[k++] ← v + lo`,
+  for value in arr: count[value - lo]++
+  writePos ← 0
+  for offset ← 0 to hi - lo:
+    repeat count[offset] times: arr[writePos++] ← offset + lo`,
     maxInput: LIMIT_FAST, maxViz: VIZ, benchSizes: FAST,
   },
   {
@@ -237,12 +244,12 @@ siftDown(A, root, n):
       'Sort each bucket with insertion sort (buckets are small on uniform data).',
       'Concatenate the buckets in order.',
     ],
-    pseudocode: `bucketSort(A):
-  lo ← min(A); range ← max(A) - lo + 1
-  B[0..n-1] ← empty lists
-  for v in A: append v to B[(v - lo) · n / range]
-  for each bucket b: insertionSort(b)
-  A ← concatenation of B[0], B[1], ..., B[n-1]`,
+    pseudocode: `bucketSort(arr):
+  lo ← min(arr); range ← max(arr) - lo + 1
+  buckets[0..n-1] ← empty lists
+  for value in arr: append value to buckets[(value - lo) · n / range]
+  for each bucket: insertionSort(bucket)
+  arr ← buckets[0] + buckets[1] + ... + buckets[n-1]`,
     maxInput: LIMIT_FAST, maxViz: VIZ, benchSizes: FAST,
   },
   {
@@ -254,17 +261,17 @@ siftDown(A, root, n):
     bad: 'Very large arrays (falls behind O(n log n) sorts) and when stability is needed.',
     uses: ['uClibc qsort', 'bzip2 compressor', 'Embedded firmware'],
     steps: [
-      'Choose a decreasing gap sequence ending in 1.',
-      'For each gap g: do an insertion sort where each element is compared with the one g positions earlier.',
-      'Large gaps move far-away elements quickly; the final g = 1 pass is a plain insertion sort on nearly sorted data.',
+      "Choose a decreasing gap sequence ending in 1.",
+      "For each gap: do an insertion sort where the key (taken from current) is compared with the element gap positions to the left of the hole.",
+      "Large gaps move far-away elements quickly; the final gap = 1 pass is a plain insertion sort on nearly sorted data.",
     ],
-    pseudocode: `shellSort(A):
-  for g in [..., 701, 301, 132, 57, 23, 10, 4, 1] with g < n:
-    for i ← g to n - 1:
-      key ← A[i]; j ← i
-      while j ≥ g and key < A[j - g]:
-        A[j] ← A[j - g]; j ← j - g
-      A[j] ← key`,
+    pseudocode: `shellSort(arr):
+  for gap in [..., 701, 301, 132, 57, 23, 10, 4, 1] with gap < n:
+    for current ← gap to n - 1:
+      key ← arr[current]; hole ← current
+      while hole ≥ gap and key < arr[hole - gap]:
+        arr[hole] ← arr[hole - gap]; hole ← hole - gap
+      arr[hole] ← key`,
     maxInput: LIMIT_FAST, maxViz: VIZ, benchSizes: FAST,
   },
   {
@@ -276,18 +283,19 @@ siftDown(A, root, n):
     bad: 'Large data sets where real O(n log n) sorts win, and stability requirements.',
     uses: ['Teaching gap-based improvements', 'Tiny embedded code'],
     steps: [
-      'Start with gap = n.',
-      'Each pass: gap ← floor(gap / 1.3) (at least 1); compare-and-swap every pair (i, i + gap).',
-      'Stop after a pass with gap = 1 that made no swaps.',
+      "Start with gap = n.",
+      "Each pass: gap ← floor(gap / 1.3) (at least 1); compare-and-swap every pair (left, right = left + gap).",
+      "Stop after a pass with gap = 1 that made no swaps.",
     ],
-    pseudocode: `combSort(A):
+    pseudocode: `combSort(arr):
   gap ← n; sorted ← false
   while not sorted:
     gap ← floor(gap / 1.3)
     if gap ≤ 1: gap ← 1; sorted ← true
-    for i ← 0 to n - gap - 1:
-      if A[i + gap] < A[i]:
-        swap A[i], A[i + gap]; sorted ← false`,
+    for left ← 0 to n - gap - 1:
+      right ← left + gap
+      if arr[right] < arr[left]:
+        swap arr[left], arr[right]; sorted ← false`,
     maxInput: LIMIT_FAST, maxViz: VIZ, benchSizes: FAST,
   },
   {
@@ -303,19 +311,20 @@ siftDown(A, root, n):
       'Bitonic merge: with m = largest power of two below the length, compare-exchange element i with i + m in the requested direction.',
       'Recursively bitonic-merge both parts. This generalisation works for any n, not just powers of two.',
     ],
-    pseudocode: `bitonicSort(A, lo, n, up):
+    pseudocode: `bitonicSort(arr, lo, n, ascending):
   if n ≤ 1: return
-  m ← n / 2
-  bitonicSort(A, lo, m, not up)
-  bitonicSort(A, lo + m, n - m, up)
-  bitonicMerge(A, lo, n, up)
+  half ← n / 2
+  bitonicSort(arr, lo, half, not ascending)
+  bitonicSort(arr, lo + half, n - half, ascending)
+  bitonicMerge(arr, lo, n, ascending)
 
-bitonicMerge(A, lo, n, up):
+bitonicMerge(arr, lo, n, ascending):
   if n ≤ 1: return
-  m ← greatest power of two < n
-  for i ← lo to lo + n - m - 1:
-    if (A[i] > A[i + m]) = up: swap A[i], A[i + m]
-  bitonicMerge(A, lo, m, up); bitonicMerge(A, lo + m, n - m, up)`,
+  distance ← greatest power of two < n
+  for left ← lo to lo + n - distance - 1:
+    if (arr[left] > arr[left + distance]) = ascending: swap arr[left], arr[left + distance]
+  bitonicMerge(arr, lo, distance, ascending)
+  bitonicMerge(arr, lo + distance, n - distance, ascending)`,
     maxInput: LIMIT_FAST, maxViz: VIZ, benchSizes: FAST,
   },
   {
@@ -327,16 +336,17 @@ bitonicMerge(A, lo, n, up):
     bad: 'Large or reverse-ordered arrays (quadratic shifts).',
     uses: ['Small-range base case in Timsort, introsort, pdqsort', 'Online insertion into a sorted list', 'Card players sorting a hand'],
     steps: [
-      'Treat A[0] as a sorted prefix.',
-      'For each next element (the key), shift every larger element of the prefix one slot right.',
-      'Drop the key into the gap. The prefix is one longer and still sorted.',
+      "Treat arr[0] as a sorted part.",
+      "Take the next element, current, out of the array: its value is the key and its slot becomes the hole.",
+      "While the element left of the hole is larger than the key, shift it right into the hole; the hole moves one step left.",
+      "Drop the key into the hole. The sorted part is one longer.",
     ],
-    pseudocode: `insertionSort(A):
-  for i ← 1 to n - 1:
-    key ← A[i]; j ← i
-    while j > 0 and key < A[j - 1]:
-      A[j] ← A[j - 1]; j ← j - 1
-    A[j] ← key`,
+    pseudocode: `insertionSort(arr):
+  for current ← 1 to n - 1:
+    key ← arr[current]; hole ← current
+    while hole > 0 and key < arr[hole - 1]:
+      arr[hole] ← arr[hole - 1]; hole ← hole - 1
+    arr[hole] ← key`,
     maxInput: LIMIT_SLOW, maxViz: VIZ, benchSizes: SLOW,
   },
   {
@@ -348,16 +358,16 @@ bitonicMerge(A, lo, n, up):
     bad: 'Anything large; it never benefits from presorted input.',
     uses: ['Teaching', 'Flash/EEPROM where writes wear the memory', 'Selecting the k smallest items (partial run)'],
     steps: [
-      'For each position i from left to right:',
-      'scan the unsorted suffix A[i..n) to find the index of its minimum;',
-      'swap that minimum into position i.',
+      "For each fillPos from left to right:",
+      "scan the unsorted part arr[fillPos..n) and remember minIndex, the index of the smallest value seen;",
+      "swap arr[minIndex] into fillPos. That slot is now final.",
     ],
-    pseudocode: `selectionSort(A):
-  for i ← 0 to n - 2:
-    m ← i
-    for j ← i + 1 to n - 1:
-      if A[j] < A[m]: m ← j
-    swap A[i], A[m]`,
+    pseudocode: `selectionSort(arr):
+  for fillPos ← 0 to n - 2:
+    minIndex ← fillPos
+    for scan ← fillPos + 1 to n - 1:
+      if arr[scan] < arr[minIndex]: minIndex ← scan
+    swap arr[fillPos], arr[minIndex]`,
     maxInput: LIMIT_SLOW, maxViz: VIZ, benchSizes: SLOW,
   },
   {
@@ -369,17 +379,17 @@ bitonicMerge(A, lo, n, up):
     bad: 'Random or large data.',
     uses: ['Teaching bidirectional passes'],
     steps: [
-      'Forward pass: bubble the largest unsorted value to the right end.',
-      'Backward pass: bubble the smallest unsorted value to the left end.',
-      'Shrink both ends and repeat until a full round makes no swap.',
+      "Forward pass: scan from lo to hi, bubbling the largest unsorted value to hi.",
+      "Backward pass: scan from hi back to lo, bubbling the smallest unsorted value to lo.",
+      "Move lo right and hi left (everything outside lo..hi is final) and repeat until a full round makes no swap.",
     ],
-    pseudocode: `cocktailSort(A):
+    pseudocode: `cocktailSort(arr):
   lo ← 0; hi ← n - 1; swapped ← true
   while swapped and lo < hi:
     swapped ← false
-    for i ← lo to hi - 1: if A[i+1] < A[i]: swap; swapped ← true
+    for scan ← lo to hi - 1: if arr[scan+1] < arr[scan]: swap; swapped ← true
     hi ← hi - 1
-    for i ← hi downto lo + 1: if A[i] < A[i-1]: swap; swapped ← true
+    for scan ← hi downto lo + 1: if arr[scan] < arr[scan-1]: swap; swapped ← true
     lo ← lo + 1`,
     maxInput: LIMIT_SLOW, maxViz: VIZ, benchSizes: SLOW,
   },
@@ -392,15 +402,17 @@ bitonicMerge(A, lo, n, up):
     bad: 'Everything else, especially small values near the end ("turtles").',
     uses: ['Teaching', 'Detecting a nearly sorted array in one pass'],
     steps: [
-      'Walk the array comparing each adjacent pair; swap if out of order.',
-      'After a pass, the largest remaining value is at the end, so the next pass can stop one earlier.',
-      'Stop early if a pass makes no swaps.',
+      "Walk scan through the unsorted part comparing each adjacent pair (scan - 1, scan); swap if out of order.",
+      "After a pass, the largest remaining value has bubbled to the end, so sortedFrom moves left: from sortedFrom to the end everything is final.",
+      "Stop early if a pass makes no swaps.",
     ],
-    pseudocode: `bubbleSort(A):
-  for end ← n downto 2:
+    pseudocode: `bubbleSort(arr):
+  sortedFrom ← n
+  while sortedFrom > 1:
     swapped ← false
-    for i ← 1 to end - 1:
-      if A[i] < A[i - 1]: swap A[i], A[i - 1]; swapped ← true
+    for scan ← 1 to sortedFrom - 1:
+      if arr[scan] < arr[scan - 1]: swap arr[scan], arr[scan - 1]; swapped ← true
+    sortedFrom ← sortedFrom - 1
     if not swapped: break`,
     maxInput: LIMIT_SLOW, maxViz: VIZ, benchSizes: SLOW,
   },
@@ -413,38 +425,39 @@ bitonicMerge(A, lo, n, up):
     bad: 'Sequential code on large data.',
     uses: ['Parallel sorting on processor arrays', 'Teaching sorting networks'],
     steps: [
-      'Odd phase: compare-swap pairs (1,2), (3,4), (5,6), ...',
-      'Even phase: compare-swap pairs (0,1), (2,3), (4,5), ...',
-      'Repeat both phases until a full round makes no swap.',
+      "Odd phase: compare-swap the pairs starting at odd indexes: (1,2), (3,4), (5,6), ...",
+      "Even phase: compare-swap the pairs starting at even indexes: (0,1), (2,3), (4,5), ...",
+      "Repeat both phases until a full round makes no swap. pairStart marks the first element of the pair being compared.",
     ],
-    pseudocode: `oddEvenSort(A):
+    pseudocode: `oddEvenSort(arr):
   sorted ← false
   while not sorted:
     sorted ← true
-    for start in [1, 0]:
-      for i ← start; i + 1 < n; i ← i + 2:
-        if A[i+1] < A[i]: swap A[i], A[i+1]; sorted ← false`,
+    for phase in [1, 0]:
+      for pairStart ← phase; pairStart + 1 < n; pairStart ← pairStart + 2:
+        if arr[pairStart+1] < arr[pairStart]:
+          swap arr[pairStart], arr[pairStart+1]; sorted ← false`,
     maxInput: LIMIT_SLOW, maxViz: VIZ, benchSizes: SLOW,
   },
   {
     id: 'gnome', name: 'Gnome sort', rank: 17, family: 'Exchange (insertion-like)',
-    summary: 'A garden gnome walks forward while pots are in order; when two are out of order he swaps them and steps back.',
+    summary: 'arr garden gnome walks forward while pots are in order; when two are out of order he swaps them and steps back.',
     why: 'Conceptually insertion sort done with swaps: stable and adaptive but does about 3x the work of insertion sort.',
     best: 'O(n)', avg: 'O(n²)', worst: 'O(n²)', space: 'O(1)', stable: true, inPlace: true, growth: 'n2',
     suitable: 'Teaching; extremely small code size.',
     bad: 'Any real workload.',
     uses: ['Teaching', 'Code-golf'],
     steps: [
-      'Start at index 0.',
-      'If at the start or A[i] ≥ A[i-1], step forward.',
-      'Otherwise swap A[i] and A[i-1] and step back.',
-      'Done when the gnome walks off the end.',
+      "The gnome starts at gnomePos = 0.",
+      "If it is at the start or arr[gnomePos] ≥ arr[gnomePos - 1], it steps forward.",
+      "Otherwise it swaps the two and steps back.",
+      "Done when the gnome walks off the end.",
     ],
-    pseudocode: `gnomeSort(A):
-  i ← 0
-  while i < n:
-    if i = 0 or A[i] ≥ A[i - 1]: i ← i + 1
-    else: swap A[i], A[i - 1]; i ← i - 1`,
+    pseudocode: `gnomeSort(arr):
+  gnomePos ← 0
+  while gnomePos < n:
+    if gnomePos = 0 or arr[gnomePos] ≥ arr[gnomePos - 1]: gnomePos++
+    else: swap arr[gnomePos], arr[gnomePos - 1]; gnomePos--`,
     maxInput: LIMIT_SLOW, maxViz: VIZ, benchSizes: SLOW,
   },
   {
@@ -456,43 +469,44 @@ bitonicMerge(A, lo, n, up):
     bad: 'Anything where comparisons cost time: it is never adaptive.',
     uses: ['Minimising writes to flash / EEPROM', 'Finding the minimum swaps to sort a permutation'],
     steps: [
-      'Take item = A[start]; its final position is start + (number of later elements smaller than it).',
-      'Skip past equal values, then write the item there and pick up the value that was displaced.',
-      'Repeat for the displaced value until the cycle returns to start.',
-      'Move on to the next start position.',
+      "Pick up item = arr[cycleStart]; its targetPos is cycleStart + (number of later elements smaller than it, counted by scan).",
+      "Skip past equal values, then put the item at targetPos and pick up the value that was there.",
+      "Repeat for the carried value until the cycle returns to cycleStart.",
+      "Move cycleStart to the next position.",
     ],
-    pseudocode: `cycleSort(A):
-  for start ← 0 to n - 2:
-    item ← A[start]
-    pos ← start + count of A[j] < item for j > start
-    if pos = start: continue
-    while item = A[pos]: pos++
-    swap item, A[pos]
-    while pos ≠ start:
-      pos ← start + count of A[j] < item for j > start
-      while item = A[pos]: pos++
-      if item ≠ A[pos]: swap item, A[pos]`,
+    pseudocode: `cycleSort(arr):
+  for cycleStart ← 0 to n - 2:
+    item ← arr[cycleStart]
+    targetPos ← cycleStart + count of arr[scan] < item for scan > cycleStart
+    if targetPos = cycleStart: continue
+    while item = arr[targetPos]: targetPos++
+    swap item, arr[targetPos]
+    while targetPos ≠ cycleStart:
+      targetPos ← cycleStart + count of arr[scan] < item for scan > cycleStart
+      while item = arr[targetPos]: targetPos++
+      if item ≠ arr[targetPos]: swap item, arr[targetPos]`,
     maxInput: LIMIT_SLOW, maxViz: VIZ, benchSizes: SLOW,
   },
   {
     id: 'pancake', name: 'Pancake sort', rank: 19, family: 'Selection (prefix reversal)',
     summary: 'Only allowed operation is "flip the top k pancakes": flip the largest to the top, then flip it to the bottom of the unsorted stack.',
-    why: 'A puzzle-inspired sort: O(n) flips but each flip costs O(n) element moves, so O(n²) overall with heavy data movement.',
+    why: 'arr puzzle-inspired sort: O(n) flips but each flip costs O(n) element moves, so O(n²) overall with heavy data movement.',
     best: 'O(n²)', avg: 'O(n²)', worst: 'O(n²)', space: 'O(1)', stable: false, inPlace: true, growth: 'n2',
     suitable: 'When prefix reversal is the only primitive available (e.g. some hardware / genome rearrangement models).',
     bad: 'Any practical sorting task.',
     uses: ['Genome rearrangement research', 'Interconnection-network routing (pancake graphs)', 'Bill Gates\'s only research paper'],
     steps: [
-      'For size = n down to 2:',
-      'find the index of the maximum within the first size elements;',
-      'flip the prefix ending there (maximum goes to the front), then flip the first size elements (maximum goes to position size - 1).',
+      "The unsorted part is arr[0..lastUnsorted]; it starts as the whole array.",
+      "scan it to find maxIndex, the position of its largest value;",
+      "flip the prefix ending at maxIndex (the maximum comes to the front), then flip the prefix ending at lastUnsorted (the maximum goes to lastUnsorted). lastUnsorted moves one left.",
     ],
-    pseudocode: `pancakeSort(A):
-  for size ← n downto 2:
-    mi ← index of max(A[0..size))
-    if mi ≠ size - 1:
-      flip(A, mi)        // reverse A[0..mi]
-      flip(A, size - 1)  // reverse A[0..size-1]`,
+    pseudocode: `pancakeSort(arr):
+  for unsortedSize ← n downto 2:
+    lastUnsorted ← unsortedSize - 1
+    maxIndex ← index of max(arr[0..lastUnsorted])
+    if maxIndex ≠ lastUnsorted:
+      flip(arr, maxIndex)       // reverse arr[0..maxIndex]
+      flip(arr, lastUnsorted)   // reverse arr[0..lastUnsorted]`,
     maxInput: LIMIT_SLOW, maxViz: VIZ, benchSizes: SLOW,
   },
   {
@@ -507,11 +521,11 @@ bitonicMerge(A, lo, n, up):
       'If the array is sorted, stop.',
       'Otherwise shuffle it uniformly at random (Fisher-Yates) and go back to step 1.',
     ],
-    pseudocode: `bogoSort(A):
-  while not isSorted(A):
+    pseudocode: `bogoSort(arr):
+  while not isSorted(arr):
     for i ← n - 1 downto 1:
       j ← random(0..i)
-      swap A[i], A[j]`,
+      swap arr[i], arr[j]`,
     maxInput: 8, maxViz: 7, benchSizes: [3, 4, 5, 6, 7],
   },
 ];

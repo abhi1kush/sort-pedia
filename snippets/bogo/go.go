@@ -4,17 +4,17 @@ import "math/rand"
 
 // Bogo sort: shuffle until sorted. Expected O(n * n!) - tiny inputs only!
 
-func isSorted(a []int) bool {
-	for i := 1; i < len(a); i++ {
-		if a[i] < a[i-1] {
+func isSorted(arr []int) bool {
+	for i := 1; i < len(arr); i++ {
+		if arr[i] < arr[i-1] {
 			return false
 		}
 	}
 	return true
 }
 
-func sortArray(a []int) {
-	for !isSorted(a) {
-		rand.Shuffle(len(a), func(i, j int) { a[i], a[j] = a[j], a[i] })
+func sortArray(arr []int) {
+	for !isSorted(arr) {
+		rand.Shuffle(len(arr), func(i, j int) { arr[i], arr[j] = arr[j], arr[i] })
 	}
 }

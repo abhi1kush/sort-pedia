@@ -10,28 +10,28 @@ func pow2Below(n int) int {
 	return k
 }
 
-func bitonicMerge(a []int, lo, n int, up bool) {
+func bitonicMerge(arr []int, lo, n int, up bool) {
 	if n <= 1 {
 		return
 	}
-	m := pow2Below(n)
-	for i := lo; i < lo+n-m; i++ {
-		if (up && a[i] > a[i+m]) || (!up && a[i] < a[i+m]) {
-			a[i], a[i+m] = a[i+m], a[i]
+	distance := pow2Below(n)
+	for left := lo; left < lo+n-distance; left++ {
+		if (up && arr[left] > arr[left+distance]) || (!up && arr[left] < arr[left+distance]) {
+			arr[left], arr[left+distance] = arr[left+distance], arr[left]
 		}
 	}
-	bitonicMerge(a, lo, m, up)
-	bitonicMerge(a, lo+m, n-m, up)
+	bitonicMerge(arr, lo, distance, up)
+	bitonicMerge(arr, lo+distance, n-distance, up)
 }
 
-func bitonic(a []int, lo, n int, up bool) {
+func bitonic(arr []int, lo, n int, up bool) {
 	if n <= 1 {
 		return
 	}
-	m := n / 2
-	bitonic(a, lo, m, !up)
-	bitonic(a, lo+m, n-m, up)
-	bitonicMerge(a, lo, n, up)
+	half := n / 2
+	bitonic(arr, lo, half, !up)
+	bitonic(arr, lo+half, n-half, up)
+	bitonicMerge(arr, lo, n, up)
 }
 
-func sortArray(a []int) { bitonic(a, 0, len(a), true) }
+func sortArray(arr []int) { bitonic(arr, 0, len(arr), true) }

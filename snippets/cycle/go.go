@@ -2,34 +2,34 @@ package main
 
 // Cycle sort: rotate each permutation cycle into place (minimum writes).
 
-func sortArray(a []int) {
-	n := len(a)
-	for start := 0; start < n-1; start++ {
-		item, pos := a[start], start
-		for i := start + 1; i < n; i++ {
-			if a[i] < item {
-				pos++
+func sortArray(arr []int) {
+	n := len(arr)
+	for cycleStart := 0; cycleStart < n-1; cycleStart++ {
+		item, targetPos := arr[cycleStart], cycleStart
+		for scan := cycleStart + 1; scan < n; scan++ {
+			if arr[scan] < item {
+				targetPos++
 			}
 		}
-		if pos == start {
+		if targetPos == cycleStart {
 			continue
 		}
-		for item == a[pos] {
-			pos++
+		for item == arr[targetPos] {
+			targetPos++
 		}
-		a[pos], item = item, a[pos]
-		for pos != start {
-			pos = start
-			for i := start + 1; i < n; i++ {
-				if a[i] < item {
-					pos++
+		arr[targetPos], item = item, arr[targetPos]
+		for targetPos != cycleStart {
+			targetPos = cycleStart
+			for scan := cycleStart + 1; scan < n; scan++ {
+				if arr[scan] < item {
+					targetPos++
 				}
 			}
-			for item == a[pos] {
-				pos++
+			for item == arr[targetPos] {
+				targetPos++
 			}
-			if item != a[pos] {
-				a[pos], item = item, a[pos]
+			if item != arr[targetPos] {
+				arr[targetPos], item = item, arr[targetPos]
 			}
 		}
 	}

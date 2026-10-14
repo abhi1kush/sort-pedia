@@ -1,30 +1,30 @@
 // Bucket sort: scatter into n buckets by value range, insertion-sort
 // each bucket, then concatenate.
 
-pub fn sort_array(a: &mut [i32]) {
-    let n = a.len();
+pub fn sort_array(arr: &mut [i32]) {
+    let n = arr.len();
     if n < 2 {
         return;
     }
-    let min = *a.iter().min().unwrap() as i64;
-    let range = *a.iter().max().unwrap() as i64 - min + 1;
+    let min = *arr.iter().min().unwrap() as i64;
+    let range = *arr.iter().max().unwrap() as i64 - min + 1;
     let mut buckets: Vec<Vec<i32>> = vec![Vec::new(); n];
-    for &v in a.iter() {
+    for &v in arr.iter() {
         buckets[((v as i64 - min) * n as i64 / range) as usize].push(v);
     }
-    let mut k = 0;
-    for mut b in buckets {
-        for i in 1..b.len() {
+    let mut write_pos = 0;
+    for mut bucket in buckets {
+        for i in 1..bucket.len() {
             // insertion sort
-            let key = b[i];
+            let key = bucket[i];
             let mut j = i;
-            while j > 0 && key < b[j - 1] {
-                b[j] = b[j - 1];
+            while j > 0 && key < bucket[j - 1] {
+                bucket[j] = bucket[j - 1];
                 j -= 1;
             }
-            b[j] = key;
+            bucket[j] = key;
         }
-        a[k..k + b.len()].copy_from_slice(&b);
-        k += b.len();
+        arr[write_pos..write_pos + bucket.len()].copy_from_slice(&bucket);
+        write_pos += bucket.len();
     }
 }

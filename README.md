@@ -27,10 +27,12 @@ WebAssembly** (`wasm/`, built with `wasm-pack`); the UI is React + Vite + TypeSc
 - **Teaching visualization**: a logarithmic speed slider from 0.25 to 200 steps/s with *Very slow / Slow / Normal /
   Fast* presets (default *Slow*, 2 steps/s; changes apply mid-run), step back / step forward (replayed from the
   trace), a progress scrubber, keyboard shortcuts (Space play/pause, ← back, → forward), **pointer markers** under
-  the bars (quick: pivot/lt/i/gt/lo/hi; insertion: key/i/j; selection: i/min/j; bubble: j/end; merge: k/right/lo/mid/hi;
-  heap: heap/node/child; shell: gap/i/j/key; plus introsort, cycle, pancake, comb, cocktail, gnome and more),
+  the bars with readable names (quick: pivot/less end/scan/greater start/lo/hi; insertion: key/current/hole;
+  selection: fill pos/min index/scan; bubble: scan/sorted from; merge: write pos/right pos/lo/mid/hi; heap: heap end/node/child;
+  shell: gap/current/hole/key; plus introsort, cycle, pancake, comb, cocktail, gnome and more) and a
+  "What the pointers mean" legend for the current algorithm; the array is called `arr` everywhere (snippets, pseudocode, captions),
   elements already in their final position shown in a distinct colour, a plain-language caption for every step
-  (e.g. *Compare a[17]=27 (i) with pivot 30: 27 < 30, so it goes left of the pivot.*), and step / comparison / swap /
+  (e.g. *Compare arr[17]=27 (scan) with pivot 30: 27 < 30, so it joins the "less" block (swap to less end; less end and scan move right).*), and step / comparison / swap /
   write counters. Pointers and sorted regions are recorded by the Rust core as extra trace ops (`OP_POINTER`,
   `OP_SORTED`, `OP_COMPARE_HELD`, see `wasm/src/ctx.rs`).
 - **Light and dark themes** via CSS variables (page, cards, syntax highlighting, charts, bars, forms, tooltips), checked

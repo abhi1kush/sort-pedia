@@ -1,13 +1,13 @@
 """Odd-even (brick) sort: alternate compare-swaps on odd and even pairs."""
 
 
-def sort_array(a):
+def sort_array(arr):
     done = False
     while not done:
         done = True
-        for start in (1, 0):
-            for i in range(start, len(a) - 1, 2):
-                if a[i + 1] < a[i]:
-                    a[i], a[i + 1] = a[i + 1], a[i]
+        for phase in (1, 0):
+            for pair_start in range(phase, len(arr) - 1, 2):
+                if arr[pair_start + 1] < arr[pair_start]:
+                    arr[pair_start], arr[pair_start + 1] = arr[pair_start + 1], arr[pair_start]
                     done = False
-    return a
+    return arr

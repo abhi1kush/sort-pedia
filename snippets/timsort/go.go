@@ -12,26 +12,26 @@ func minRun(n int) int {
 	return n + r
 }
 
-func mergeRuns(a []int, lo, mid, hi int) {
-	tmp := append([]int(nil), a[lo:mid]...)
+func mergeRuns(arr []int, lo, mid, hi int) {
+	temp := append([]int(nil), arr[lo:mid]...)
 	i, j, k := 0, mid, lo
-	for i < len(tmp) && j < hi {
-		if a[j] < tmp[i] {
-			a[k] = a[j]
+	for i < len(temp) && j < hi {
+		if arr[j] < temp[i] {
+			arr[k] = arr[j]
 			j++
 		} else {
-			a[k] = tmp[i]
+			arr[k] = temp[i]
 			i++
 		}
 		k++
 	}
-	copy(a[k:], tmp[i:])
+	copy(arr[k:], temp[i:])
 }
 
 type run struct{ start, length int }
 
-func sortArray(a []int) {
-	n := len(a)
+func sortArray(arr []int) {
+	n := len(arr)
 	if n < 2 {
 		return
 	}
@@ -39,22 +39,22 @@ func sortArray(a []int) {
 	var runs []run
 	mergeAt := func(i int) {
 		x, y := runs[i], runs[i+1]
-		mergeRuns(a, x.start, x.start+x.length, x.start+x.length+y.length)
+		mergeRuns(arr, x.start, x.start+x.length, x.start+x.length+y.length)
 		runs[i].length += y.length
 		runs = append(runs[:i+1], runs[i+2:]...)
 	}
 	for lo := 0; lo < n; {
 		hi := lo + 1
 		if hi < n {
-			if a[hi] < a[lo] { // strictly descending: reverse
-				for hi+1 < n && a[hi+1] < a[hi] {
+			if arr[hi] < arr[lo] { // strictly descending: reverse
+				for hi+1 < n && arr[hi+1] < arr[hi] {
 					hi++
 				}
 				for x, y := lo, hi; x < y; x, y = x+1, y-1 {
-					a[x], a[y] = a[y], a[x]
+					arr[x], arr[y] = arr[y], arr[x]
 				}
 			} else {
-				for hi+1 < n && a[hi+1] >= a[hi] {
+				for hi+1 < n && arr[hi+1] >= arr[hi] {
 					hi++
 				}
 			}
@@ -68,17 +68,17 @@ func sortArray(a []int) {
 			end = hi
 		}
 		for i := hi; i < end; i++ { // binary insertion sort
-			key, l, r := a[i], lo, i
+			key, l, r := arr[i], lo, i
 			for l < r {
 				m := (l + r) / 2
-				if key < a[m] {
+				if key < arr[m] {
 					r = m
 				} else {
 					l = m + 1
 				}
 			}
-			copy(a[l+1:i+1], a[l:i])
-			a[l] = key
+			copy(arr[l+1:i+1], arr[l:i])
+			arr[l] = key
 		}
 		runs = append(runs, run{lo, end - lo})
 		lo = end

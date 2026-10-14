@@ -2,13 +2,13 @@ package main
 
 // Insertion sort: grow a sorted prefix one element at a time.
 
-func sortArray(a []int) {
-	for i := 1; i < len(a); i++ {
-		key, j := a[i], i
-		for j > 0 && key < a[j-1] {
-			a[j] = a[j-1]
-			j--
+func sortArray(arr []int) {
+	for current := 1; current < len(arr); current++ {
+		key, hole := arr[current], current
+		for hole > 0 && key < arr[hole-1] {
+			arr[hole] = arr[hole-1]
+			hole--
 		}
-		a[j] = key
+		arr[hole] = key
 	}
 }

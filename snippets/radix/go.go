@@ -2,20 +2,20 @@ package main
 
 // LSD radix sort, base 256, on the unsigned offset key (value - min).
 
-func sortArray(a []int) {
-	n := len(a)
+func sortArray(arr []int) {
+	n := len(arr)
 	if n < 2 {
 		return
 	}
-	min := a[0]
-	for _, v := range a {
+	min := arr[0]
+	for _, v := range arr {
 		if v < min {
 			min = v
 		}
 	}
-	key, out := make([]uint64, n), make([]uint64, n)
+	key, output := make([]uint64, n), make([]uint64, n)
 	var max uint64
-	for i, v := range a {
+	for i, v := range arr {
 		key[i] = uint64(v - min)
 		if key[i] > max {
 			max = key[i]
@@ -31,12 +31,12 @@ func sortArray(a []int) {
 		}
 		for _, k := range key {
 			d := (k >> shift) & 255
-			out[count[d]] = k
+			output[count[d]] = k
 			count[d]++
 		}
-		key, out = out, key
+		key, output = output, key
 	}
 	for i, k := range key {
-		a[i] = int(k) + min
+		arr[i] = int(k) + min
 	}
 }

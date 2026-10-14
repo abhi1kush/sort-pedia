@@ -2,10 +2,10 @@
 #include <utility>
 #include <vector>
 
-void sortArray(std::vector<int>& a) {
-    for (size_t i = 0; i + 1 < a.size(); i++) {
-        size_t m = i;
-        for (size_t j = i + 1; j < a.size(); j++) if (a[j] < a[m]) m = j;
-        std::swap(a[i], a[m]);
+void sortArray(std::vector<int>& arr) {
+    for (size_t fillPos = 0; fillPos + 1 < arr.size(); fillPos++) {
+        size_t minIndex = fillPos;
+        for (size_t scan = fillPos + 1; scan < arr.size(); scan++) if (arr[scan] < arr[minIndex]) minIndex = scan;
+        std::swap(arr[fillPos], arr[minIndex]);
     }
 }

@@ -37,16 +37,16 @@ describe('speed mapping', () => {
 const P = (name: string) => POINTER_NAMES.indexOf(name as never);
 const input = [3, 1, 2];
 const trace = [
-  OP_POINTER, P('key'), 1, OP_POINTER, P('j'), 1,
-  OP_COMPARE_HELD, 0, 1, // key 1 vs a[0]=3
+  OP_POINTER, P('key'), 1, OP_POINTER, P('hole'), 1,
+  OP_COMPARE_HELD, 0, 1, // key 1 vs arr[0]=3
   OP_SET, 1, 3, // shift 3 right
-  OP_POINTER, P('j'), 0,
+  OP_POINTER, P('hole'), 0,
   OP_SET, 0, 1, // place key
-  OP_POINTER, P('key'), 2, OP_POINTER, P('j'), 2,
-  OP_COMPARE_HELD, 1, 2, // key 2 vs a[1]=3
+  OP_POINTER, P('key'), 2, OP_POINTER, P('hole'), 2,
+  OP_COMPARE_HELD, 1, 2, // key 2 vs arr[1]=3
   OP_SET, 2, 3,
-  OP_POINTER, P('j'), 1,
-  OP_COMPARE_HELD, 0, 2, // key 2 vs a[0]=1
+  OP_POINTER, P('hole'), 1,
+  OP_COMPARE_HELD, 0, 2, // key 2 vs arr[0]=1
   OP_SET, 1, 2,
   OP_COMPARE, 0, 1,
   OP_SWAP, 1, 2, OP_SWAP, 1, 2, // swap there and back (net no-op)
@@ -69,10 +69,10 @@ describe('TracePlayer step forward / back', () => {
     const p = new TracePlayer(input, trace, 'insertion');
     p.forward();
     expect(p.pointers.get('key')).toBe(1);
-    expect(p.pointers.get('j')).toBe(1);
-    expect(p.caption).toBe('Compare key 1 with a[0]=3: 1 < 3, so 3 must shift right.');
+    expect(p.pointers.get('hole')).toBe(1);
+    expect(p.caption).toBe('Compare key 1 with arr[0]=3: 1 < 3, so 3 must shift right.');
     p.forward();
-    expect(p.caption).toBe('Write 3 into a[1] (key, j) (was 1).');
+    expect(p.caption).toBe('Write 3 into arr[1] (key, hole) (was 1).');
     expect(p.array).toEqual([3, 3, 2]);
   });
   it('step back restores the exact previous state, including pointers and counters', () => {
@@ -102,8 +102,8 @@ describe('TracePlayer step forward / back', () => {
     expect(p.array).toEqual([2, 1]);
   });
   it('describes pivot comparisons for quick sort', () => {
-    const p = new TracePlayer([5, 7, 3], [OP_POINTER, P('pivot'), 0, OP_POINTER, P('i'), 1, OP_COMPARE, 1, 0, OP_COMPARE, 2, 0], 'quick');
+    const p = new TracePlayer([5, 7, 3], [OP_POINTER, P('pivot'), 0, OP_POINTER, P('scan'), 1, OP_COMPARE, 1, 0, OP_COMPARE, 2, 0], 'quick');
     p.forward();
-    expect(p.caption).toBe('Compare a[1]=7 (i) with pivot 5: 7 > 5, so it goes right of the pivot.');
+    expect(p.caption).toBe('Compare arr[1]=7 (scan) with pivot 5: 7 > 5, so it joins the "greater" block (swap to greater start; greater start moves left).');
   });
 });

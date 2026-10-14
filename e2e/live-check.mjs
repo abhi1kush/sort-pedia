@@ -55,7 +55,7 @@ try {
   check('explanation and code side by side on desktop', twoCols);
 
   console.log('Language switch');
-  const expectByLang = { c: /void sort_array\(int \*a, int n\)/, cpp: /void sortArray\(std::vector<int>& a\)/, go: /func sortArray\(a \[\]int\)/, rust: /pub fn sort_array\(a: &mut \[i32\]\)/, python: /def sort_array\(a\)/, java: /class MergeSort/ };
+  const expectByLang = { c: /void sort_array\(int \*arr, int n\)/, cpp: /void sortArray\(std::vector<int>& arr\)/, go: /func sortArray\(arr \[\]int\)/, rust: /pub fn sort_array\(arr: &mut \[i32\]\)/, python: /def sort_array\(arr\)/, java: /class MergeSort/ };
   for (const [lang, re] of Object.entries(expectByLang)) {
     await page.selectOption('[data-testid=lang-select]', lang);
     check(`switch to ${lang}`, (await code.getAttribute('data-lang')) === lang && re.test(await code.innerText()));
@@ -213,9 +213,9 @@ try {
   check('progress scrubber seeks', (await stepOf(page)) === Math.floor(total / 2), `${await stepOf(page)} vs ${Math.floor(total / 2)}`);
 
   for (const [algoId, ptrs, capRe] of [
-    ['quick', ['pivot', 'i', 'lt', 'gt'], /pivot \d+: \d+ [<>=] \d+, so it (goes left of|goes right of|equals) the pivot|Swap a\[/],
-    ['insertion', ['key', 'j'], /Compare key \d+ with a\[\d+\]=\d+|Write \d+ into a\[/],
-    ['merge', ['k', 'right', 'mid'], /left-run value \d+ with a\[\d+\]=\d+ \(.*right.*\)|Write \d+ into a\[\d+\]/],
+    ['quick', ['pivot', 'scan', 'lessEnd', 'greaterStart'], /pivot \d+: \d+ [<>=] \d+, so it (joins the "less" block|joins the "greater" block|stays with the pivot copies)/],
+    ['insertion', ['key', 'hole'], /Compare key \d+ with arr\[\d+\]=\d+|Write \d+ into arr\[/],
+    ['merge', ['writePos', 'rightPos', 'mid'], /left-run value \d+ with arr\[\d+\]=\d+ \(.*right pos.*\)|Write \d+ into arr\[\d+\]/],
   ]) {
     await startViz(page, algoId, teach);
     await page.click('[data-testid=viz-play]'); // pause
@@ -228,12 +228,22 @@ try {
     const missing = ptrs.filter((x) => !seen.has(x));
     check(`${algoId}: pointer markers shown (${ptrs.join(', ')})`, missing.length === 0, `missing ${missing} seen ${[...seen]}`);
     check(`${algoId}: plain-language captions shown`, [...caps].some((c) => capRe.test(c)), [...caps].slice(0, 3).join(' | '));
+    const shown = await page.locator('[data-testid=viz-pointers] .ptr-name').allInnerTexts();
+    check(`${algoId}: no cryptic pointer labels on screen`, !shown.some((t) => /^(lt|gt|i|j|k|m|a)$/.test(t.trim())), shown.join(','));
+    check(`${algoId}: captions say arr[...] not a[...]`, ![...caps].some((c) => /\ba\[/.test(c)), [...caps].find((c) => /\ba\[/.test(c)));
+    const legend = await page.locator('[data-testid=viz-ptr-legend] [data-legend]').evaluateAll((e) => e.map((x) => x.dataset.legend));
+    check(`${algoId}: pointer legend lists ${ptrs.join(', ')}`, ptrs.every((x) => legend.includes(x)), legend.join(','));
+    check(`${algoId}: legend entries have descriptions`, (await page.locator('[data-testid=viz-ptr-legend] dd').allInnerTexts()).every((t) => t.trim().length > 8));
     check(`${algoId}: counters update`, /Comparisons \d+/.test(await page.locator('[data-testid=viz-status]').innerText()));
     if (algoId === 'quick') {
       for (let k = 0; k < 60 && !/with pivot/.test(await page.locator('[data-testid=viz-caption]').innerText()); k++) await page.click('[data-testid=viz-step]');
       await page.click('[data-testid=speed-slow]');
       await page.locator('[data-testid=viz]').scrollIntoViewIfNeeded();
       await page.locator('[data-testid=playground]').screenshot({ path: `${OUT}/sort-pedia-slow-viz.png` });
+      const lg = page.locator('[data-testid=viz-ptr-legend]');
+      if (!(await lg.evaluate((d) => d.open))) await lg.locator('summary').click();
+      check('quick: legend highlights active pointers', (await lg.locator('[data-legend].active').count()) > 0);
+      await page.locator('[data-testid=playground]').screenshot({ path: `${OUT}/sort-pedia-names.png` });
     }
   }
 
@@ -295,6 +305,15 @@ try {
   check('dark + 360px: pointer labels do not overlap', overlaps === 0, `${overlaps} overlaps`);
   const clipped = await dm.locator('[data-testid=viz-pointers] .ptr-name').evaluateAll((els) => els.filter((e) => { const r = e.getBoundingClientRect(), p = e.closest('.pointers').getBoundingClientRect(); return r.left < p.left - 1 || r.right > p.right + 1; }).length);
   check('dark + 360px: pointer labels not clipped at the edges', clipped === 0, `${clipped} clipped`);
+  await dm.click('[data-testid=viz-play]');
+  let worst = 0, worstClip = 0;
+  for (let k = 0; k < 80; k++) {
+    await dm.click('[data-testid=viz-step]');
+    worst += await dm.locator('[data-testid=viz-pointers] .ptr-name').evaluateAll((els) => { const r = els.map((e) => e.getBoundingClientRect()); let c = 0; for (let a = 0; a < r.length; a++) for (let b = a + 1; b < r.length; b++) if (r[a].left < r[b].right && r[b].left < r[a].right && r[a].top < r[b].bottom && r[b].top < r[a].bottom) c++; return c; });
+    worstClip += await dm.locator('[data-testid=viz-pointers] .ptr-name').evaluateAll((els) => els.filter((e) => { const r = e.getBoundingClientRect(), p = e.closest('.pointers').getBoundingClientRect(); return r.left < p.left - 1 || r.right > p.right + 1 || e.scrollWidth > e.clientWidth + 1; }).length);
+  }
+  check('dark + 360px: long pointer labels never overlap across 80 quick-sort steps', worst === 0, `${worst} overlaps`);
+  check('dark + 360px: long pointer labels never clipped across 80 quick-sort steps', worstClip === 0, `${worstClip} clipped`);
   await dm.locator('[data-testid=viz]').scrollIntoViewIfNeeded();
   await dm.evaluate(() => window.scrollBy(0, -120));
   await dm.screenshot({ path: `${OUT}/sort-pedia-dark-mobile.png`, fullPage: false });

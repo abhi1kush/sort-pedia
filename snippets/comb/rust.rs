@@ -1,7 +1,7 @@
 // Comb sort: bubble sort over a shrinking gap (factor 1.3).
 
-pub fn sort_array(a: &mut [i32]) {
-    let mut gap = a.len();
+pub fn sort_array(arr: &mut [i32]) {
+    let mut gap = arr.len();
     let mut sorted = false;
     while !sorted {
         gap = (gap as f64 / 1.3) as usize;
@@ -9,9 +9,9 @@ pub fn sort_array(a: &mut [i32]) {
             gap = 1;
             sorted = true;
         }
-        for i in 0..a.len().saturating_sub(gap) {
-            if a[i + gap] < a[i] {
-                a.swap(i, i + gap);
+        for left in 0..arr.len().saturating_sub(gap) {
+            if arr[left + gap] < arr[left] {
+                arr.swap(left, left + gap);
                 sorted = false;
             }
         }

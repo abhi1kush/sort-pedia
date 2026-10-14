@@ -2,25 +2,25 @@
  * bucket with insertion sort, then concatenate the buckets. */
 #include <stdlib.h>
 
-void sort_array(int *a, int n) {
+void sort_array(int *arr, int n) {
     if (n < 2) return;
-    int min = a[0], max = a[0];
-    for (int i = 1; i < n; i++) { if (a[i] < min) min = a[i]; if (a[i] > max) max = a[i]; }
+    int min = arr[0], max = arr[0];
+    for (int i = 1; i < n; i++) { if (arr[i] < min) min = arr[i]; if (arr[i] > max) max = arr[i]; }
     long long range = (long long)max - min + 1;
-    int *count = calloc(n + 1, sizeof(int)), *out = malloc(sizeof(int) * n);
+    int *count = calloc(n + 1, sizeof(int)), *output = malloc(sizeof(int) * n);
     #define BUCKET(v) ((int)(((long long)(v) - min) * n / range))
-    for (int i = 0; i < n; i++) count[BUCKET(a[i]) + 1]++;
-    for (int b = 0; b < n; b++) count[b + 1] += count[b];       /* bucket start offsets */
+    for (int i = 0; i < n; i++) count[BUCKET(arr[i]) + 1]++;
+    for (int bucket = 0; bucket < n; bucket++) count[bucket + 1] += count[bucket];       /* bucket start offsets */
     int *pos = malloc(sizeof(int) * n);
-    for (int b = 0; b < n; b++) pos[b] = count[b];
-    for (int i = 0; i < n; i++) out[pos[BUCKET(a[i])]++] = a[i];
-    for (int b = 0; b < n; b++)                                 /* insertion sort each bucket */
-        for (int i = count[b] + 1; i < count[b + 1]; i++) {
-            int key = out[i], j = i;
-            while (j > count[b] && key < out[j - 1]) { out[j] = out[j - 1]; j--; }
-            out[j] = key;
+    for (int bucket = 0; bucket < n; bucket++) pos[bucket] = count[bucket];
+    for (int i = 0; i < n; i++) output[pos[BUCKET(arr[i])]++] = arr[i];
+    for (int bucket = 0; bucket < n; bucket++)                                 /* insertion sort each bucket */
+        for (int i = count[bucket] + 1; i < count[bucket + 1]; i++) {
+            int key = output[i], j = i;
+            while (j > count[bucket] && key < output[j - 1]) { output[j] = output[j - 1]; j--; }
+            output[j] = key;
         }
-    for (int i = 0; i < n; i++) a[i] = out[i];
+    for (int i = 0; i < n; i++) arr[i] = output[i];
     #undef BUCKET
-    free(count); free(out); free(pos);
+    free(count); free(output); free(pos);
 }

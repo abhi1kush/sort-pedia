@@ -2,65 +2,65 @@
 is too deep, insertion sort for small ranges."""
 
 
-def _insertion(a, lo, hi):
+def _insertion(arr, lo, hi):
     for i in range(lo + 1, hi):
-        key, j = a[i], i
-        while j > lo and key < a[j - 1]:
-            a[j] = a[j - 1]
+        key, j = arr[i], i
+        while j > lo and key < arr[j - 1]:
+            arr[j] = arr[j - 1]
             j -= 1
-        a[j] = key
+        arr[j] = key
 
 
-def _sift(a, lo, root, n):
+def _sift(arr, lo, root, n):
     while True:
         child = 2 * root + 1
         if child >= n:
             return
-        if child + 1 < n and a[lo + child] < a[lo + child + 1]:
+        if child + 1 < n and arr[lo + child] < arr[lo + child + 1]:
             child += 1
-        if a[lo + root] >= a[lo + child]:
+        if arr[lo + root] >= arr[lo + child]:
             return
-        a[lo + root], a[lo + child] = a[lo + child], a[lo + root]
+        arr[lo + root], arr[lo + child] = arr[lo + child], arr[lo + root]
         root = child
 
 
-def _heapsort(a, lo, hi):
+def _heapsort(arr, lo, hi):
     n = hi - lo
     for i in range(n // 2 - 1, -1, -1):
-        _sift(a, lo, i, n)
+        _sift(arr, lo, i, n)
     for end in range(n - 1, 0, -1):
-        a[lo], a[lo + end] = a[lo + end], a[lo]
-        _sift(a, lo, 0, end)
+        arr[lo], arr[lo + end] = arr[lo + end], arr[lo]
+        _sift(arr, lo, 0, end)
 
 
-def _intro(a, lo, hi, depth):
+def _intro(arr, lo, hi, depth):
     while hi - lo > 16:
         if depth == 0:
-            _heapsort(a, lo, hi)
+            _heapsort(arr, lo, hi)
             return
         depth -= 1
-        mid, p = lo + (hi - lo) // 2, hi - 1
-        if a[mid] < a[lo]:
-            a[mid], a[lo] = a[lo], a[mid]
-        if a[p] < a[lo]:
-            a[p], a[lo] = a[lo], a[p]
-        if a[mid] < a[p]:  # median now at a[p]
-            a[mid], a[p] = a[p], a[mid]
-        i = lo
-        for j in range(lo, p):
-            if a[j] < a[p]:
-                a[i], a[j] = a[j], a[i]
-                i += 1
-        a[i], a[p] = a[p], a[i]
-        if i - lo < hi - i - 1:
-            _intro(a, lo, i, depth)
-            lo = i + 1
+        mid, pivot_pos = lo + (hi - lo) // 2, hi - 1
+        if arr[mid] < arr[lo]:
+            arr[mid], arr[lo] = arr[lo], arr[mid]
+        if arr[pivot_pos] < arr[lo]:
+            arr[pivot_pos], arr[lo] = arr[lo], arr[pivot_pos]
+        if arr[mid] < arr[pivot_pos]:  # median now at arr[pivot_pos]
+            arr[mid], arr[pivot_pos] = arr[pivot_pos], arr[mid]
+        store_pos = lo
+        for scan in range(lo, pivot_pos):
+            if arr[scan] < arr[pivot_pos]:
+                arr[store_pos], arr[scan] = arr[scan], arr[store_pos]
+                store_pos += 1
+        arr[store_pos], arr[pivot_pos] = arr[pivot_pos], arr[store_pos]
+        if store_pos - lo < hi - store_pos - 1:
+            _intro(arr, lo, store_pos, depth)
+            lo = store_pos + 1
         else:
-            _intro(a, i + 1, hi, depth)
-            hi = i
-    _insertion(a, lo, hi)
+            _intro(arr, store_pos + 1, hi, depth)
+            hi = store_pos
+    _insertion(arr, lo, hi)
 
 
-def sort_array(a):
-    _intro(a, 0, len(a), 2 * len(a).bit_length())
-    return a
+def sort_array(arr):
+    _intro(arr, 0, len(arr), 2 * len(arr).bit_length())
+    return arr
