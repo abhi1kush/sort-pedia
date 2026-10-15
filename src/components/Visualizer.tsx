@@ -67,9 +67,12 @@ export default function Visualizer({ algoId, input, trace, sorted, truncated }: 
   const ok = done && arr.every((v, i) => v === sorted[i]);
   const mask = player.sortedMask;
 
+  const range = player.activeRange;
+  const stack = player.callStack;
   const cls = (k: number) => {
     if (done) return 'bar done';
     let c = mask[k] ? 'bar sorted' : 'bar';
+    if (range && (k < range[0] || k > range[1])) c += ' dim';
     if (last) {
       const hit = k === last.i || ((last.op === OP_COMPARE || last.op === OP_SWAP) && k === last.j);
       if (hit) c += last.op === OP_COMPARE || last.op === OP_COMPARE_HELD ? ' cmp' : last.op === OP_SWAP ? ' swap' : last.op === OP_SET ? ' set' : '';
@@ -104,6 +107,17 @@ export default function Visualizer({ algoId, input, trace, sorted, truncated }: 
 
   return (
     <div className="viz" data-testid="viz" ref={rootRef}>
+      {stack.length > 0 && (
+        <div className="callstack small" data-testid="viz-callstack" aria-label="Recursion call stack">
+          <span className="callstack-depth" data-testid="viz-depth">depth {player.depth}</span>
+          {stack.map((r, q) => (
+            <span key={q} className="call-wrap">
+              {q > 0 && <span className="call-sep" aria-hidden="true">›</span>}
+              <span className={q === stack.length - 1 ? 'call current' : 'call'} data-range={`${r[0]}..${r[1]}`}>{r[0]}..{r[1]}</span>
+            </span>
+          ))}
+        </div>
+      )}
       <div className="bars" data-testid="viz-bars">
         {arr.map((v, k) => (
           <div key={k} className={cls(k)} style={{ height: `${height(v)}%` }} data-value={v} data-tip={`arr[${k}] = ${v}`}>

@@ -5,6 +5,13 @@ export const OP_SET = 2; // arr[x] = y
 export const OP_POINTER = 3; // pointer POINTER_NAMES[x] at index y (-1 hides it; "gap" holds a value)
 export const OP_SORTED = 4; // arr[x..y) is in its final position
 export const OP_COMPARE_HELD = 5; // compare held value y (key / left-run value / item) with arr[x]
+// Recursion ops (merge sort), inclusive ranges arr[x..y]; mid = x + floor((y - x) / 2).
+export const OP_SPLIT = 6; // a call on x..y (two or more elements) splits at mid
+export const OP_BASE = 7; // a call on x..x: one element, already sorted
+export const OP_MERGE = 8; // merge x..mid and mid+1..y
+
+export const midOf = (lo: number, hi: number) => lo + Math.floor((hi - lo) / 2);
+export type Range = [number, number];
 
 /** Mirrors POINTER_NAMES in wasm/src/ctx.rs (camelCase ids; shown to learners as words via pointerLabel). */
 export const POINTER_NAMES = [
@@ -22,7 +29,7 @@ export function pointerLabel(name: string): string {
 export const POINTER_HELP: Record<string, string> = {
   lo: 'first index of the range being worked on',
   hi: 'last index of the range being worked on',
-  mid: 'where the left half ends and the right half begins',
+  mid: 'last index of the left half: the left half is lo..mid, the right half is mid + 1..hi',
   pivot: 'position of the pivot value everything is compared with',
   lessEnd: 'end of the "less than pivot" block: everything left of it is smaller than the pivot',
   greaterStart: 'start of the "greater than pivot" block: everything right of it is larger than the pivot',
@@ -52,7 +59,7 @@ export const POINTER_HELP: Record<string, string> = {
 };
 export const POINTER_HELP_BY_ALGO: Record<string, Record<string, string>> = {
   cocktail: { lo: 'first unsorted index (everything left of it is final)', hi: 'last unsorted index (everything right of it is final)' },
-  merge: { lo: 'first index of the two halves being merged', hi: 'last index of the two halves being merged' },
+  merge: { lo: 'first index of the current recursive call\'s range', hi: 'last index of the current recursive call\'s range (the first call has lo = 0, hi = n - 1)' },
   quick: { i: 'the current index: the element being compared with the pivot right now' },
   timsort: { key: 'the element being binary-inserted into the run' },
 };
@@ -67,7 +74,8 @@ export const HELD_LABEL: Record<string, string> = {
   insertion: 'key', shell: 'key', timsort: 'key', introsort: 'key', bucket: 'key', merge: 'left-run value', cycle: 'item',
 };
 
-export const isStepOp = (op: number) => op === OP_COMPARE || op === OP_SWAP || op === OP_SET || op === OP_COMPARE_HELD;
+export const isRecursionOp = (op: number) => op === OP_SPLIT || op === OP_BASE || op === OP_MERGE;
+export const isStepOp = (op: number) => op === OP_COMPARE || op === OP_SWAP || op === OP_SET || op === OP_COMPARE_HELD || isRecursionOp(op);
 
 /** Apply op number k of the trace to arr in place (array effects only); returns the decoded op. */
 export function applyOp(arr: number[], trace: ArrayLike<number>, k: number): { op: number; i: number; j: number } {
@@ -90,7 +98,11 @@ export function replay(input: number[], trace: ArrayLike<number>): number[] {
 
 export interface LastOp { op: number; i: number; j: number }
 
-interface Snapshot { arr: number[]; ptrs: Map<string, number>; sorted: Uint8Array; cmp: number; swaps: number; writes: number; raw: number }
+interface Snapshot {
+  arr: number[]; ptrs: Map<string, number>; sorted: Uint8Array; cmp: number; swaps: number; writes: number; raw: number;
+  /** Recursion call stack (outermost first; the last entry is the current call) and the active range. */
+  stack: Range[]; range: Range | null;
+}
 
 const CHECKPOINT_EVERY = 256;
 
@@ -118,7 +130,7 @@ export class TracePlayer {
     }
     this.pointerNamesUsed = POINTER_NAMES.filter((nm) => used.has(nm));
     this.total = this.steps.length;
-    this.cur = { arr: [...input], ptrs: new Map(), sorted: new Uint8Array(input.length), cmp: 0, swaps: 0, writes: 0, raw: 0 };
+    this.cur = { arr: [...input], ptrs: new Map(), sorted: new Uint8Array(input.length), cmp: 0, swaps: 0, writes: 0, raw: 0, stack: [], range: null };
     this.checkpoints.push(this.clone(this.cur));
   }
 
@@ -129,9 +141,15 @@ export class TracePlayer {
   get swaps() { return this.cur.swaps; }
   get writes() { return this.cur.writes; }
   get done() { return this.step >= this.total; }
+  /** Range the current recursive call works on (merge sort), or null. Bars outside it are dimmed. */
+  get activeRange(): Range | null { return this.cur.range; }
+  /** Recursion call stack, outermost call first; the last entry is the current call. */
+  get callStack(): readonly Range[] { return this.cur.stack; }
+  /** Recursion depth of the current call (0 = the first call on the whole array), or -1 if none. */
+  get depth(): number { return this.cur.stack.length - 1; }
 
   private clone(s: Snapshot): Snapshot {
-    return { arr: [...s.arr], ptrs: new Map(s.ptrs), sorted: s.sorted.slice(), cmp: s.cmp, swaps: s.swaps, writes: s.writes, raw: s.raw };
+    return { arr: [...s.arr], ptrs: new Map(s.ptrs), sorted: s.sorted.slice(), cmp: s.cmp, swaps: s.swaps, writes: s.writes, raw: s.raw, stack: s.stack.map((r) => [r[0], r[1]] as Range), range: s.range ? [s.range[0], s.range[1]] : null };
   }
 
   /** Apply raw ops up to and including the next visible step (and trailing meta ops if it is the last step). */
@@ -152,12 +170,34 @@ export class TracePlayer {
         else if (op === OP_SWAP) s.swaps++;
         else if (op === OP_SET) s.writes++;
         applyOp(s.arr, t, k);
+        if (isRecursionOp(op)) this.enterCall(s, op, x, y);
         this.last = { op, i: x, j: y };
       }
     }
     this.step++;
     if (this.step % CHECKPOINT_EVERY === 0 && this.checkpoints.length === this.step / CHECKPOINT_EVERY) this.checkpoints.push(this.clone(s));
-    if (this.done) { s.ptrs.clear(); this.caption = 'Done: every element is in its final sorted position.'; this.last = null; }
+    if (this.done) { s.ptrs.clear(); s.stack = []; s.range = null; this.caption = 'Done: every element is in its final sorted position.'; this.last = null; }
+  }
+
+  /** Update the call stack, active range and lo / mid / hi pointers for a split, base-case or merge step. */
+  private enterCall(s: Snapshot, op: number, lo: number, hi: number) {
+    const same = (r: Range) => r[0] === lo && r[1] === hi;
+    if (op === OP_MERGE) {
+      while (s.stack.length && !same(s.stack[s.stack.length - 1])) s.stack.pop(); // return to the call that merges
+    } else {
+      // a new call: return from finished calls until the top of the stack contains this range
+      while (s.stack.length) {
+        const top = s.stack[s.stack.length - 1];
+        if (top[0] <= lo && hi <= top[1] && !same(top)) break;
+        s.stack.pop();
+      }
+      s.stack.push([lo, hi]);
+    }
+    s.range = [lo, hi];
+    for (const nm of ['writePos', 'rightPos']) s.ptrs.delete(nm);
+    s.ptrs.set('lo', lo);
+    s.ptrs.set('hi', hi);
+    if (op === OP_BASE) s.ptrs.delete('mid'); else s.ptrs.set('mid', midOf(lo, hi));
   }
 
   forward(): boolean {
@@ -225,6 +265,16 @@ export class TracePlayer {
         return `Swap ${at(x)} and ${at(y)}.`;
       case OP_SET:
         return `Write ${y} into arr[${x}]${this.label(x)} (was ${a[x]}).`;
+      case OP_SPLIT: {
+        const mid = midOf(x, y);
+        return `Split range lo=${x}..hi=${y} at mid=${mid}: sort the left half ${x}..${mid} first, then the right half ${mid + 1}..${y}.`;
+      }
+      case OP_BASE:
+        return `Range ${x}..${y} has one element, already sorted.`;
+      case OP_MERGE: {
+        const mid = midOf(x, y);
+        return `Merge ${x}..${mid} and ${mid + 1}..${y} into one sorted range ${x}..${y}.`;
+      }
       default:
         return '';
     }

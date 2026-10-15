@@ -1,5 +1,5 @@
 //! Instrumented array context: every sort operates through `Ctx` so that
-//! comparisons, swaps and writes are counted and (optionally) recorded as arr
+//! comparisons, swaps and writes are counted and (optionally) recorded as a
 //! trace that the UI can replay.
 
 use std::cmp::Ordering;
@@ -11,6 +11,11 @@ pub const OP_SET: i32 = 2; // x = index, y = new value
 pub const OP_POINTER: i32 = 3; // x = pointer name id (see POINTER_NAMES), y = index (or value for value pointers), -1 = hide
 pub const OP_SORTED: i32 = 4; // mark arr[x..y) as being in final sorted position
 pub const OP_COMPARE_HELD: i32 = 5; // x = index, y = held value compared against arr[x] (e.g. insertion key)
+/// Recursion ops (merge sort). Ranges are inclusive: arr[x..=y]. The UI derives mid = x + (y - x) / 2,
+/// the active range, the recursion depth and the call stack from these.
+pub const OP_SPLIT: i32 = 6; // call on arr[x..=y] with at least two elements: about to split at mid
+pub const OP_BASE: i32 = 7; // call on arr[x..=x]: one element, already sorted (y = x)
+pub const OP_MERGE: i32 = 8; // about to merge arr[x..=mid] and arr[mid+1..=y]
 
 /// Pointer names used by OP_POINTER, indexed by id (camelCase; the UI shows them as words,
 /// e.g. "lessEnd" -> "less end"). Mirrored in src/trace.ts.
@@ -96,7 +101,7 @@ impl Ctx {
         self.arr[i] < self.arr[j]
     }
 
-    /// Compare two values (e.g. one held in arr temporary); hi/hj are indices to highlight.
+    /// Compare two values (e.g. one held in a temporary); hi/hj are indices to highlight.
     #[inline]
     pub fn cmp_val(&mut self, x: i32, y: i32, hi: usize, hj: usize) -> Ordering {
         self.comparisons += 1;
@@ -109,7 +114,7 @@ impl Ctx {
         self.cmp_val(x, y, hi, hj) == Ordering::Less
     }
 
-    /// Compare arr value held outside the array (key / left-run value / item) with arr[i]: returns held < arr[i].
+    /// Compare a value held outside the array (key / left-run value / item) with arr[i]: returns held < arr[i].
     #[inline]
     pub fn held_less(&mut self, held: i32, i: usize) -> bool {
         self.comparisons += 1;
@@ -131,6 +136,14 @@ impl Ctx {
         self.rec(OP_COMPARE_HELD, i as i32, held);
         held == self.arr[i]
     }
+
+    /// Visual-only recursion markers (not counted).
+    #[inline]
+    pub fn split(&mut self, lo: usize, hi: usize) { self.rec(OP_SPLIT, lo as i32, hi as i32); }
+    #[inline]
+    pub fn base(&mut self, at: usize) { self.rec(OP_BASE, at as i32, at as i32); }
+    #[inline]
+    pub fn merge_mark(&mut self, lo: usize, hi: usize) { self.rec(OP_MERGE, lo as i32, hi as i32); }
 
     /// Visual-only: place pointer `name` at index (or value) `v`. Not counted.
     #[inline]

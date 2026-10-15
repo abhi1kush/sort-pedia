@@ -33,7 +33,7 @@ WebAssembly** (`wasm/`, built with `wasm-pack`); the UI is React + Vite + TypeSc
   "What the pointers mean" legend for the current algorithm; the array is called `arr` everywhere (snippets, pseudocode, captions),
   elements already in their final position shown in a distinct colour, a plain-language caption for every step
   (e.g. *Compare arr[17]=27 (i) with pivot 30: 27 < 30, so it joins the "less" block (swap to less end; less end and i move right).*), and step / comparison / swap /
-  write counters. Pointers and sorted regions are recorded by the Rust core as extra trace ops (`OP_POINTER`,
+  write counters. Merge sort shows its top-down recursion: a split step per call (lo / mid / hi on the bars, everything outside the active range dimmed), base-case steps, merge steps, the recursion depth and a call-stack strip above the bars. Pointers and sorted regions are recorded by the Rust core as extra trace ops (`OP_POINTER`,
   `OP_SORTED`, `OP_COMPARE_HELD`, see `wasm/src/ctx.rs`).
 - **Light and dark themes** via CSS variables (page, cards, syntax highlighting, charts, bars, forms, tooltips), checked
   for WCAG AA contrast by a Vitest test. The header *Theme* control offers **Auto** (default), Light and Dark, saved in

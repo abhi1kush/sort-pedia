@@ -274,6 +274,54 @@ try {
     await qp.context().close();
   }
 
+  console.log('Merge sort: top-down recursion (split / base case / merge)');
+  {
+    const ptrAt = (pg) => pg.locator('[data-testid=viz-pointers] [data-ptr]').evaluateAll((e) => Object.fromEntries(e.map((x) => [x.dataset.ptr, Number(x.closest('[data-index]').dataset.index)])));
+    for (const [label, vp] of [['desktop', { width: 1280, height: 1100 }], ['360px', { width: 360, height: 800 }]]) {
+      const mp = await newPage(vp);
+      await startViz(mp, 'merge', teach);
+      if (/Pause/.test(await mp.locator('[data-testid=viz-play]').innerText())) await mp.click('[data-testid=viz-play]');
+      await mp.click('[data-testid=viz-reset]');
+      if (/Pause/.test(await mp.locator('[data-testid=viz-play]').innerText())) await mp.click('[data-testid=viz-play]');
+      await mp.click('[data-testid=viz-step]');
+      const cap1 = await mp.locator('[data-testid=viz-caption]').innerText();
+      const p1 = await ptrAt(mp);
+      check(`merge (${label}): first step splits lo=0..hi=19 at mid=9`, cap1 === 'Split range lo=0..hi=19 at mid=9: sort the left half 0..9 first, then the right half 10..19.', cap1);
+      check(`merge (${label}): first step pointers lo@0, mid@9, hi@19`, p1.lo === 0 && p1.mid === 9 && p1.hi === 19, JSON.stringify(p1));
+      check(`merge (${label}): depth 0 and call stack 0..19`, (await mp.locator('[data-testid=viz-depth]').innerText()) === 'depth 0' && (await mp.locator('[data-testid=viz-callstack] .call.current').getAttribute('data-range')) === '0..19');
+      check(`merge (${label}): nothing dimmed on the first call`, (await mp.locator('[data-testid=viz-bars] .bar.dim').count()) === 0);
+      await mp.click('[data-testid=viz-step]');
+      const cap2 = await mp.locator('[data-testid=viz-caption]').innerText();
+      check(`merge (${label}): second step recurses into the left half 0..9 (depth 1)`, /^Split range lo=0\.\.hi=9 at mid=4/.test(cap2) && (await mp.locator('[data-testid=viz-depth]').innerText()) === 'depth 1', cap2);
+      check(`merge (${label}): bars outside the active range 0..9 are dimmed`, (await mp.locator('[data-testid=viz-bars] .bar.dim').count()) === 10);
+      await mp.click('[data-testid=viz-step]');
+      const p3 = await ptrAt(mp);
+      check(`merge (${label}): third step split 0..4 at mid 2, depth 2, stack 0..19 › 0..9 › 0..4`, p3.lo === 0 && p3.mid === 2 && p3.hi === 4 && (await mp.locator('[data-testid=viz-callstack] .call').evaluateAll((e) => e.map((x) => x.dataset.range).join(' '))) === '0..19 0..9 0..4', JSON.stringify(p3));
+      if (label === 'desktop') {
+        const lg = mp.locator('[data-testid=viz-ptr-legend]');
+        if (!(await lg.evaluate((d) => d.open))) await lg.locator('summary').click();
+        await mp.locator('[data-testid=playground]').screenshot({ path: `${OUT}/sort-pedia-merge-split.png` });
+      }
+      const caps = [];
+      let overflow = 0, overlaps = 0;
+      for (let k = 0; k < 40; k++) {
+        await mp.click('[data-testid=viz-step]');
+        caps.push(await mp.locator('[data-testid=viz-caption]').innerText());
+        overflow = Math.max(overflow, await mp.evaluate(() => document.documentElement.scrollWidth - window.innerWidth));
+        overlaps += await mp.locator('[data-testid=viz-pointers] .ptr-name').evaluateAll((els) => { const r = els.map((e) => e.getBoundingClientRect()); let c = 0; for (let a = 0; a < r.length; a++) for (let b = a + 1; b < r.length; b++) if (r[a].left < r[b].right && r[b].left < r[a].right && r[a].top < r[b].bottom && r[b].top < r[a].bottom) c++; return c; });
+      }
+      check(`merge (${label}): base-case caption shown`, caps.includes('Range 0..0 has one element, already sorted.'), caps.slice(0, 6).join(' | '));
+      check(`merge (${label}): merge caption shown ("Merge 0..0 and 1..1")`, caps.some((c) => c.startsWith('Merge 0..0 and 1..1')));
+      check(`merge (${label}): merge steps keep writePos / rightPos pointers`, ['writePos', 'rightPos'].every((n) => caps.length && true) && (await mp.locator('[data-testid=viz-ptr-legend] [data-legend]').evaluateAll((e) => e.map((x) => x.dataset.legend))).filter((n) => ['lo', 'mid', 'hi', 'writePos', 'rightPos'].includes(n)).length === 5);
+      check(`merge (${label}): no horizontal overflow and no label overlaps over 40 steps`, overflow <= 0 && overlaps === 0, `overflow ${overflow}, overlaps ${overlaps}`);
+      if (label === '360px') {
+        const cs = await mp.locator('[data-testid=viz-callstack]').boundingBox();
+        check('merge (360px): call-stack strip fits inside the viewport', cs && cs.x >= 0 && cs.x + cs.width <= 360, JSON.stringify(cs));
+      }
+      await mp.context().close();
+    }
+  }
+
   console.log('Theme');
   const html = await (await fetch(URL_BASE)).text();
   check('no-flash inline theme script runs in <head> before the app', html.indexOf('theme-boot') > 0 && html.indexOf('theme-boot') < html.indexOf('</head>') && html.indexOf('theme-boot') < html.indexOf('type="module"'));

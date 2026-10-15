@@ -100,7 +100,7 @@ proptest! {
 }
 
 // ---------------------------------------------------------------- pointer / sorted-region trace fields
-use sortcore::ctx::{OP_COMPARE, OP_COMPARE_HELD, OP_POINTER, OP_SET, OP_SORTED, OP_SWAP, POINTER_NAMES};
+use sortcore::ctx::{OP_BASE, OP_COMPARE, OP_COMPARE_HELD, OP_MERGE, OP_POINTER, OP_SET, OP_SORTED, OP_SPLIT, OP_SWAP, POINTER_NAMES};
 
 /// Replays the trace step by step, validating every op, and checks that each
 /// OP_SORTED region already holds its final values when it is marked.
@@ -129,6 +129,8 @@ fn check_trace_fields(id: &str, input: &[i32]) -> std::collections::HashSet<&'st
                 assert!(0 <= x && x < y && y <= n, "{id}: bad sorted range {op:?}");
                 assert_eq!(&arr[x as usize..y as usize], &expected[x as usize..y as usize], "{id}: region {x}..{y} marked sorted too early on {input:?}");
             }
+            OP_SPLIT | OP_MERGE => assert!(0 <= x && x < y && y < n, "{id}: bad range op {op:?}"),
+            OP_BASE => assert!(0 <= x && x == y && y < n, "{id}: bad base op {op:?}"),
             _ => panic!("{id}: unknown op {o}"),
         }
     }
@@ -195,4 +197,62 @@ fn no_cryptic_pointer_names() {
         assert!(!POINTER_NAMES.contains(&bad), "cryptic pointer name '{bad}' is still used");
     }
     assert!(POINTER_NAMES.contains(&"i"), "the current index pointer should be called i");
+}
+
+// ---------------------------------------------------------------- merge sort: top-down recursion trace
+
+fn merge_trace(input: &[i32]) -> Vec<i32> {
+    let mut c = Ctx::new(input.to_vec(), true);
+    run_on("merge", &mut c).unwrap();
+    c.trace
+}
+
+#[test]
+fn merge_first_op_is_split_of_whole_array() {
+    for n in [2usize, 3, 7, 16, 20, 33] {
+        let v: Vec<i32> = (0..n as i32).rev().collect();
+        let t = merge_trace(&v);
+        assert_eq!(&t[0..3], &[OP_SPLIT, 0, n as i32 - 1], "n={n}: first op must split lo=0, hi=n-1");
+    }
+    let t = merge_trace(&[5]);
+    assert_eq!(&t[0..3], &[OP_BASE, 0, 0], "a single element is a base case");
+}
+
+#[test]
+fn merge_recursion_counts_and_order() {
+    for n in 1usize..=64 {
+        let v: Vec<i32> = (0..n as i32).map(|x| (x * 37 + 11) % 29).collect();
+        let t = merge_trace(&v);
+        let ops: Vec<(i32, i32, i32)> = t.chunks_exact(3).map(|o| (o[0], o[1], o[2])).collect();
+        let splits = ops.iter().filter(|o| o.0 == OP_SPLIT).count();
+        let bases = ops.iter().filter(|o| o.0 == OP_BASE).count();
+        let merges = ops.iter().filter(|o| o.0 == OP_MERGE).count();
+        assert_eq!(splits, n - 1, "n={n}: split count");
+        assert_eq!(bases, n, "n={n}: base-case count");
+        assert_eq!(merges, n - 1, "n={n}: merge count");
+        // simulate the recursion: every split is followed (eventually) by the merge of the same range,
+        // the left half is visited before the right half, and mid = lo + (hi - lo) / 2.
+        let mut stack: Vec<(i32, i32)> = Vec::new();
+        let mut expect_next: Vec<(i32, i32)> = vec![(0, n as i32 - 1)];
+        for &(o, x, y) in &ops {
+            match o {
+                OP_SPLIT | OP_BASE => {
+                    let want = expect_next.pop().expect("unexpected call");
+                    assert_eq!((x, y), want, "n={n}: calls must go top-down, left half first");
+                    if o == OP_SPLIT {
+                        let mid = x + (y - x) / 2;
+                        stack.push((x, y));
+                        expect_next.push((mid + 1, y));
+                        expect_next.push((x, mid));
+                    }
+                }
+                OP_MERGE => assert_eq!(stack.pop(), Some((x, y)), "n={n}: merge must close the matching split"),
+                _ => {}
+            }
+        }
+        assert!(stack.is_empty() && expect_next.is_empty());
+        let mut sorted = v.clone();
+        sorted.sort();
+        assert_eq!(replay(&v, &t), sorted, "n={n}: trace replays to sorted");
+    }
 }

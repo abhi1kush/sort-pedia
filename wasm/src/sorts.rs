@@ -60,12 +60,12 @@ fn heap_range(c: &mut Ctx, lo: usize, hi: usize) {
     c.hide(p::NODE);
 }
 
-/// Stable merge of arr[lo..mid) and arr[mid..hi) using arr temp copy of the left run.
+/// Stable merge of arr[lo..mid) and arr[mid..hi) using a temp copy of the left run.
 fn merge_runs(c: &mut Ctx, lo: usize, mid: usize, hi: usize) {
     let temp: Vec<i32> = c.arr[lo..mid].to_vec();
     let (mut left_idx, mut right_pos, mut write_pos) = (0usize, mid, lo);
     c.ptr(p::LO, lo);
-    c.ptr(p::MID, mid);
+    c.ptr(p::MID, mid - 1); // last index of the left half
     c.ptr(p::HI, hi - 1);
     while left_idx < temp.len() && right_pos < hi {
         c.ptr(p::WRITE_POS, write_pos);
@@ -265,15 +265,22 @@ fn quick_rec(c: &mut Ctx, mut lo: usize, mut hi: usize) {
 // ---------------------------------------------------------------- 4. Merge sort (top-down)
 pub fn merge(c: &mut Ctx) {
     let n = c.len();
-    merge_rec(c, 0, n);
+    if n == 0 { return; }
+    merge_rec(c, 0, n - 1);
 }
 
+/// Top-down recursive merge sort on the inclusive range arr[lo..=hi].
 fn merge_rec(c: &mut Ctx, lo: usize, hi: usize) {
-    if hi - lo < 2 { return; }
+    if lo >= hi {
+        c.base(lo); // one element: already sorted
+        return;
+    }
     let mid = lo + (hi - lo) / 2;
+    c.split(lo, hi);
     merge_rec(c, lo, mid);
-    merge_rec(c, mid, hi);
-    merge_runs(c, lo, mid, hi);
+    merge_rec(c, mid + 1, hi);
+    c.merge_mark(lo, hi);
+    merge_runs(c, lo, mid + 1, hi + 1);
 }
 
 // ---------------------------------------------------------------- 5. Heap sort

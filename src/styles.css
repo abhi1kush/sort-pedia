@@ -168,3 +168,10 @@ textarea[aria-invalid='true'] { border-color: var(--bad); }
   .bars { height: 180px; }
 }
 .notation { font-size: .85rem; color: var(--muted); margin: 0 0 .5rem; }
+.bar.dim { opacity: .28; }
+.callstack { display: flex; flex-wrap: wrap; gap: .15rem .35rem; align-items: center; margin-bottom: .35rem; font-family: ui-monospace, monospace; }
+.callstack-depth { font-weight: 700; color: var(--accent); margin-right: .2rem; }
+.callstack .call { color: var(--muted); white-space: nowrap; }
+.callstack .call.current { color: var(--text); font-weight: 700; background: var(--accent-2); border-radius: 4px; padding: 0 .25rem; }
+.call-sep { margin-right: .35rem; color: var(--muted); }
+.callstack .call-wrap { white-space: nowrap; }

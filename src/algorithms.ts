@@ -133,28 +133,33 @@ export const ALGORITHMS: Algo[] = [
   },
   {
     id: 'merge', name: 'Merge sort', rank: 4, family: 'Divide & conquer (merge)',
-    summary: 'Split the array in half, sort each half recursively, then merge the two sorted halves.',
+    summary: 'Top-down recursion: split the range lo..hi at mid, sort the left half lo..mid and then the right half mid + 1..hi recursively, then merge the two sorted halves.',
     why: 'Stable with a guaranteed O(n log n) worst case and very predictable; needs O(n) extra memory and does not adapt to presorted input (Timsort fixes that).',
     best: 'O(n log n)', avg: 'O(n log n)', worst: 'O(n log n)', space: 'O(n)', stable: true, inPlace: false, growth: 'nlogn',
     suitable: 'Stable sorting, linked lists, external (on-disk) sorting, parallel sorting.',
     bad: 'Memory-constrained environments (O(n) buffer) and tiny arrays (recursion overhead).',
     uses: ['External sorting of huge files', 'Sorting linked lists', 'Counting inversions', 'GNU sort'],
     steps: [
-      "If the range lo..hi has fewer than two elements, it is sorted.",
-      "Split it at mid and sort both halves recursively.",
-      "Merge: leftPos and rightPos walk the two halves; repeatedly copy the smaller of arr[leftPos] and arr[rightPos] to writePos (the left one on ties, for stability).",
-      "Copy whatever remains of either half.",
+      "Start with one call on the whole array: lo = 0, hi = n - 1 (n = number of elements).",
+      "Divide: if the range lo..hi has one element (lo = hi), it is already sorted (the base case). Otherwise compute mid = lo + (hi - lo) / 2, rounded down.",
+      "Sort the left half lo..mid with a recursive call first, then the right half mid + 1..hi. Each call splits again, so the recursion goes deeper until every range has one element.",
+      "Conquer: when both halves of a call are sorted, merge them. leftPos walks the left half, rightPos walks the right half, and the smaller of the two values is written at writePos (the left one on ties, so the sort is stable).",
+      "Copy whatever remains of either half. The call returns, and its parent merges the next level up, until the first call merges 0..mid with mid + 1..n - 1.",
     ],
-    pseudocode: `mergeSort(arr, lo, hi):
-  if hi - lo < 2: return
-  mid ← (lo + hi) / 2
-  mergeSort(arr, lo, mid); mergeSort(arr, mid, hi)
-  leftPos ← lo; rightPos ← mid
-  for writePos in lo..hi-1:
-    if rightPos ≥ hi or (leftPos < mid and arr[leftPos] ≤ arr[rightPos]):
-      temp[writePos] ← arr[leftPos++]
-    else: temp[writePos] ← arr[rightPos++]
-  copy temp[lo..hi) to arr[lo..hi)`,
+    pseudocode: `mergeSort(arr, lo, hi):          // first call: mergeSort(arr, 0, n - 1)
+  if lo >= hi: return              // one element: already sorted
+  mid ← lo + (hi - lo) / 2         // rounded down
+  mergeSort(arr, lo, mid)          // sort the left half
+  mergeSort(arr, mid + 1, hi)      // sort the right half
+  merge(arr, lo, mid, hi)
+
+merge(arr, lo, mid, hi):           // halves lo..mid and mid + 1..hi are sorted
+  leftPos ← lo; rightPos ← mid + 1
+  for writePos ← lo to hi:
+    if rightPos > hi or (leftPos ≤ mid and arr[leftPos] ≤ arr[rightPos]):
+      temp[writePos] ← arr[leftPos]; leftPos ← leftPos + 1
+    else: temp[writePos] ← arr[rightPos]; rightPos ← rightPos + 1
+  copy temp[lo..hi] to arr[lo..hi]`,
     maxInput: LIMIT_FAST, maxViz: VIZ, benchSizes: FAST,
   },
   {
